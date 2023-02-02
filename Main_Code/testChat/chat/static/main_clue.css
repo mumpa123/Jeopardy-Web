@@ -1,0 +1,121 @@
+@font-face {
+    font-family: 'ITC_Korinna';
+    src: url("fonts/korinna-bold-webfont.woff");
+}
+
+@font-face {
+    font-family: 'gyparody';
+    src: url("fonts/gyparody.ttf")
+}
+@font-face {
+    font-family: 'HelveticaComp';
+    src: url("fonts/HelveticaComp.ttf")
+}
+
+
+* {
+    padding: 0;
+    margin: 0;
+
+}
+body {
+    background: gray;
+    overflow:hidden;
+}
+
+table.board_table {
+
+    width: 90vw;
+    height: 90vh;
+    border: 10px solid black ;
+    /* border-color: black; */
+    font-family: "gyparody", sans-serif;
+    font-size: 45px;
+    background: black;
+    table-layout: fixed;
+
+}
+
+/* 1.714 * height = width */
+/* th {
+    background: blue;
+    color: white;
+    overflow-wrap:break-word; 
+    text-align: center;
+    border: 2px solid black;
+    border-bottom: 4px solid black;
+    width: 17vw;
+    height: 17vh;
+
+
+} */
+
+
+
+
+.header{
+    border: 2px solid black;
+    border-bottom: 8px solid black;
+    background-image: linear-gradient(to right, rgb(1,27,172), rgb(0,19,150));
+    text-align: center;
+    font-family: "Impact";
+    width: 16.1vw; /*16.2vw; */
+    height: 15.345vh;
+    font-size: 45px;
+    color: white;
+}
+
+
+
+
+.current_clue{
+    box-sizing: border-box;
+    background: rgb(0,19,150);
+    background-image: "blank_blue_jeopardy.png";
+    /* display:block; */
+    display:table;
+    /* padding-top:50vh; */
+    
+    text-align: center;
+    /* border: solid 2px red; */
+    width: 100vw;
+    height: 100vh;
+    font-family: "ITC_Korinna";
+    color: white;
+}
+
+.inner_box {
+    display:table-cell;
+    box-sizing:border-box;
+    vertical-align:middle;
+    background-image: "blank_blue_jeopardy.png";
+    /* position: absolute;
+    left:28%;
+    top:30%; */
+    /* border: solid 2px yellow; */
+    padding-left: 23vw;
+    padding-right: 22vw;
+    text-align: center;
+    /* max-width: 700px; */
+    font-size: 87px;
+    text-shadow: 7px 4px 4px black;     
+ 
+}
+
+#unit {
+    font-family: "gyparody";
+    /* background: rgb(1,27,172); */
+    /* background-image: linear-gradient(to right, rgb(1,27,172), rgb(0,19,150)); */
+    background-image: "blank_blue_jeopardy.png";
+    color: white;   
+    text-align: center;
+    overflow-wrap: break-word;
+    border: 2px solid black;
+    width: 16.1vw; /*16.2vw; */
+    height: 15.345vh;
+    border-collapse: collapse;
+    font-size: 110px;
+    color: rgb(245,173,63);    
+    text-shadow: 2px 4px 4px black;      
+}
+

@@ -1,0 +1,191 @@
+@font-face {
+    font-family: 'ITC_Korinna';
+    src: url("fonts/korinna-bold-webfont.woff");
+}
+@font-face {
+    font-family: 'gyparody';
+    src: url("fonts/gyparody.ttf")
+}
+@font-face {
+    font-family: 'HelveticaComp';
+    src: url("fonts/HelveticaComp.ttf")
+}
+
+
+* {
+    padding: 0;
+    margin: 0;
+
+}
+
+body {
+    background: gray;
+    /* overflow:hidden; */
+}
+
+
+
+table.board_table {
+
+    width: 620px;
+    height: 429px;
+    border: 4px solid;
+    border-color: black;
+    font-family: "ITC_Korinna", sans-serif;
+    background: black;
+
+}
+
+
+td {
+    border: 2px solid;
+    
+    border-color: black;
+    cursor: pointer;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    font-family: "ITC_Korinna", sans-serif;
+    font-size: 34px;
+    background: blue;
+    color: gold;
+    
+    
+}
+
+
+th {
+    border: 2px solid;
+    /* border-color: black; */
+    border-bottom: 4px solid;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    cursor: pointer;
+    font-family: "ITC_Korinna", sans-serif;
+    font-size: 10px;
+    background: blue;
+    color: white;
+    border-color: black;
+    height: 72 px;
+    /* width: 110px; */
+    
+    
+    
+}
+
+.board{
+    display: inline-block;
+    
+}
+
+
+
+.box_clues{
+    display: inline-block;
+    padding: 10px;
+    position: absolute;
+    top: 0px;
+
+}
+.clue_read {
+    width: 50px;
+    height: 100px;
+    font-size: 15px;
+}
+
+.answer_read {
+    width: 50px;
+    height: 100px;
+    font-size: 15px;
+}
+
+
+.clue_box th{
+    width: 150px;
+    height: 80px;
+    
+}
+
+
+.player_info{
+   float: right;
+   margin-right: 0px;
+    /* position: absolute; */
+    /* right: 300px; */
+    width: 300px;
+}
+
+.player_info td {
+    font-size: 20px;
+    width: 400px;
+    color: white;
+    text-align: left;
+}
+
+.player_buzzed_box{
+    display: inline-block;
+}
+.player_buzzed_box td{
+
+    width: 220px;
+    font-size: 20px;
+    background: lightgray;
+    color: black;
+    /* background: gold; */
+}
+.player_box {
+    width:200px;
+}
+
+.selection_box {
+    display: inline-block;
+    position: absolute;
+    left: 730px;
+    
+
+}
+
+.selection_box td {
+    width: 250px;
+    font-size: 25px;
+}
+
+.wager_calculator {
+    border: 3px solid red;
+    width: 600px;
+}
+
+.wager_calculator h1 {
+    text-align: center; 
+}
+
+
+
+
+a {
+    display: block;
+    
+    height: 68px;
+   
+    
+}
+
+/* .categories a {
+    font-size: 10px;
+    overflow-wrap: break-word;
+} */
+
+
+.finished_reading {
+    display:inline;
+}
+
+.buzzed_box {
+    
+    background: orange;
+    color: purple;
+    font-size: 30px;
+}
+
+

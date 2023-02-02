@@ -1,0 +1,131 @@
+@font-face {
+    font-family: 'ITC_Korinna';
+    src: url("fonts/korinna-bold-webfont.woff");
+}
+
+@font-face {
+    font-family: 'gyparody';
+    src: url("fonts/gyparody.ttf")
+}
+@font-face {
+    font-family: 'HelveticaComp';
+    src: url("fonts/HelveticaComp.ttf")
+}
+
+
+* {
+    padding: 0;
+    margin: 0;
+
+}
+body {
+    background: gray;
+    overflow:hidden;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+table.board_table {
+
+    width: 90vw;
+    height: 91vh;
+    border: 10px solid black ;
+    /* border-color: black; */
+    font-family: "gyparody", sans-serif;
+    font-size: 45px;
+    background: black;
+    table-layout: fixed;
+
+}
+
+
+
+
+.header{
+    border: 2px solid black;
+    border-bottom: 8px solid black;
+    background-image: linear-gradient(to right, rgb(1,27,172), rgb(0,19,150));
+    text-align: center;
+    font-family: "Impact";
+    overflow-wrap: break-word;
+    width: 16.4vw; /*16.2vw; */
+    height: 15.3vh;
+    font-size: 44px;
+    color: white;
+}
+
+#unit {
+    font-family: "gyparody";
+    /* background: rgb(1,27,172); */
+    background-image: linear-gradient(to right, rgb(1,27,172), rgb(0,19,150));
+    color: white;   
+    text-align: center;
+    overflow-wrap: break-word;
+    border: 5px solid black;
+    width: 16.1vw; /*16.2vw; */
+    height: 10.3vh;
+    border-collapse: collapse;
+    font-size: 70px;
+    color: rgb(245,173,63);    
+    text-shadow: 2px 4px 4px black;      
+}
+
+
+.player_stuff {
+    text-align: center;
+    background: blue;
+    background-image: linear-gradient(to right, rgb(1,27,172), rgb(0,19,150));
+    width: 100vw;
+    font-weight:bold;
+    color: white;
+    font-size: 30px;
+    font-family: "Helvetica";
+}
+
+
+/* .player_stuff td {
+    
+    border: solid 4px red;
+    width: 33vw;
+    height: 4vh;
+} */
+
+
+#player_name1 {
+    box-sizing: border-box;
+    border: solid 4px black;
+    width: 33vw; 
+    height: 4vh;
+}
+#player_name2 {
+    border: solid 4px black;
+    width: 33vw; 
+    height: 4vh;
+}
+#player_name3 {
+    border: solid 4px black;
+    width: 33vw; 
+    height: 4vh;
+}
+
+
+#player_score1 {
+    border: solid 4px black;
+    width: 33vw; 
+    height: 4vh;
+}
+
+#player_score2 {
+    border: solid 4px black;
+    width: 33vw; 
+    height: 4vh;
+
+}
+
+#player_score3 {
+    border: solid 4px black;
+    width: 33vw; 
+    height: 4vh;
+}
