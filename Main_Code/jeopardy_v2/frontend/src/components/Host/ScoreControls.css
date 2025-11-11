@@ -1,0 +1,114 @@
+.score-controls {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.score-controls h3 {
+  margin: 0 0 1.5rem 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.player-score-control {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-left: 4px solid;
+}
+
+.player-score-control:last-child {
+  margin-bottom: 0;
+}
+
+.player-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.player-info .player-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.current-score {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #0066cc;
+}
+
+.quick-adjustments {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.quick-button {
+  padding: 0.5rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.quick-button.positive {
+  background: #27ae60;
+  color: white;
+}
+
+.quick-button.positive:hover {
+  background: #229954;
+  transform: scale(1.05);
+}
+
+.quick-button.negative {
+  background: #e74c3c;
+  color: white;
+}
+
+.quick-button.negative:hover {
+  background: #c0392b;
+  transform: scale(1.05);
+}
+
+.custom-adjustment {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.custom-adjustment input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.custom-adjustment button {
+  padding: 0.5rem 1.5rem;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.custom-adjustment button:hover {
+  background: #2980b9;
+}
+
+@media (max-width: 768px) {
+  .quick-adjustments {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

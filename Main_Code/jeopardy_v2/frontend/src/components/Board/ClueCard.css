@@ -1,0 +1,54 @@
+.clue-card {
+  aspect-ratio: 1.5 / 1;
+  background-image: linear-gradient(to right, rgb(1, 27, 172), rgb(0, 19, 150));
+  border: 5px solid black;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Arial Black', sans-serif;
+  color: rgb(245, 173, 63);
+  text-shadow: 2px 4px 4px black;
+}
+
+.clue-card:not(.revealed):not(.disabled):hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 20px rgba(245, 173, 63, 0.6);
+}
+
+.clue-card:not(.revealed):not(.disabled):active {
+  transform: scale(0.98);
+}
+
+.clue-card.revealed {
+  background: #1a1a1a;
+  border-color: #333;
+  cursor: default;
+}
+
+.clue-card.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.clue-value {
+  font-size: 4.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-weight: bold;
+}
+
+/* Responsive font size */
+@media (max-width: 1200px) {
+  .clue-value {
+    font-size: 3.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .clue-value {
+    font-size: 2.5rem;
+  }
+}

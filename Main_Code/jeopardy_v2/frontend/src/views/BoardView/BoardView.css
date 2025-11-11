@@ -1,0 +1,10 @@
+.board-view {
+  min-height: 100vh;
+  background-color: gray;
+}
+
+.board-content {
+  padding: 1rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}

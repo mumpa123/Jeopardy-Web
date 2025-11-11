@@ -1,0 +1,63 @@
+.player-view {
+  min-height: 100vh;
+  background-color: gray;
+}
+
+.player-content {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.player-score-display {
+  background-image: linear-gradient(to right, rgb(1, 27, 172), rgb(0, 19, 150));
+  border: 4px solid black;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.player-score-display h2 {
+  color: white;
+  font-family: 'Impact', sans-serif;
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.player-score {
+  color: rgb(245, 173, 63);
+  font-size: 4rem;
+  font-weight: bold;
+  font-family: 'Arial Black', sans-serif;
+  text-shadow: 2px 4px 4px black;
+}
+
+.player-status {
+  background: white;
+  border: 3px solid black;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.current-clue-display {
+  background-image: linear-gradient(to right, rgb(1, 27, 172), rgb(0, 19, 150));
+  border: 4px solid black;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  color: white;
+  font-size: 1.5rem;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.buzz-container {
+  display: flex;
+  justify-content: center;
+  padding: 3rem 0;
+}

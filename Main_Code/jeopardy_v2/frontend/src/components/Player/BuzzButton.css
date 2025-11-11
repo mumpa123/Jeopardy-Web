@@ -1,0 +1,51 @@
+.buzz-button {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  font-size: 2rem;
+  font-weight: bold;
+  border: 8px solid #333;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-image: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.buzz-button:not(.disabled):hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+}
+
+.buzz-button:not(.disabled):active {
+  transform: scale(0.95);
+}
+
+.buzz-button.buzzed {
+  background-image: linear-gradient(135deg, #27ae60, #229954);
+  animation: pulse 0.5s ease;
+}
+
+.buzz-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-image: linear-gradient(135deg, #7f8c8d, #95a5a6);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@media (max-width: 768px) {
+  .buzz-button {
+    width: 150px;
+    height: 150px;
+    font-size: 1.5rem;
+  }
+}
