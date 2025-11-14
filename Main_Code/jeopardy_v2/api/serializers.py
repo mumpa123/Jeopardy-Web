@@ -89,6 +89,7 @@ class EpisodeListSerializer(serializers.ModelSerializer):
                 'id',
                 'season_number',
                 'air_date',
+                'episode_number',
                 'total_clues'
             ]
 

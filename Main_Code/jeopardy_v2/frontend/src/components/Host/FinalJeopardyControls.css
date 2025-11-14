@@ -1,0 +1,326 @@
+.final-jeopardy-controls {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.fj-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #ffd700;
+}
+
+.fj-header h3 {
+  color: #ffd700;
+  font-size: 1.8rem;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.fj-stage {
+  color: white;
+}
+
+.fj-status {
+  font-size: 1.1rem;
+  text-align: center;
+  margin: 1rem 0;
+  color: #e0e0e0;
+}
+
+.fj-hint {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #999;
+  margin-top: 0.5rem;
+}
+
+.fj-start-button,
+.fj-reveal-button {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  margin: 1.5rem auto;
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(255, 215, 0, 0.3);
+}
+
+.fj-start-button:hover,
+.fj-reveal-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(255, 215, 0, 0.5);
+}
+
+.fj-category-display {
+  background: rgba(255, 215, 0, 0.1);
+  border: 2px solid #ffd700;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.fj-label {
+  color: #999;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.fj-category {
+  color: #ffd700;
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.fj-wager-status,
+.fj-answer-status {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.player-wager-status,
+.player-answer-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+}
+
+.player-name {
+  font-weight: bold;
+  color: #fff;
+}
+
+.wager-in,
+.answer-submitted {
+  color: #4caf50;
+  font-weight: bold;
+}
+
+.wager-pending,
+.answer-pending {
+  color: #ff9800;
+}
+
+.fj-clue-display {
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.2), rgba(21, 101, 192, 0.2));
+  border: 3px solid #1976d2;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1rem 0 1.5rem 0;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+}
+
+.fj-clue-label {
+  color: #64b5f6;
+  font-size: 0.9rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0 0 0.75rem 0;
+  text-align: center;
+}
+
+.fj-clue-question {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  padding: 0.75rem;
+  background: rgba(25, 118, 210, 0.1);
+  border-radius: 8px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.fj-timer-display {
+  text-align: center;
+  margin: 2rem 0;
+}
+
+.fj-timer {
+  font-size: 4rem;
+  font-weight: bold;
+  color: #4caf50;
+  text-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+  transition: all 0.3s ease;
+}
+
+.fj-timer.urgent {
+  color: #f44336;
+  animation: pulse 1s ease-in-out infinite;
+  text-shadow: 0 0 20px rgba(244, 67, 54, 0.8);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.fj-correct-answer-box {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(56, 142, 60, 0.2));
+  border: 3px solid #4caf50;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.fj-correct-label {
+  color: #4caf50;
+  font-size: 0.9rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0 0 0.75rem 0;
+}
+
+.fj-correct-answer {
+  color: #fff;
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  padding: 0.5rem;
+  background: rgba(76, 175, 80, 0.1);
+  border-radius: 8px;
+}
+
+.fj-judging-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.fj-judging-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.player-info h4 {
+  color: #ffd700;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.3rem;
+}
+
+.player-wager {
+  color: #999;
+  margin: 0;
+}
+
+.player-answer-display {
+  margin: 1rem 0;
+}
+
+.answer-label {
+  color: #999;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.answer-text {
+  background: rgba(255, 255, 255, 0.1);
+  border-left: 3px solid #ffd700;
+  padding: 1rem;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 1.1rem;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+}
+
+.fj-judge-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.fj-judge-correct,
+.fj-judge-incorrect {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fj-judge-correct {
+  background: #4caf50;
+  color: white;
+}
+
+.fj-judge-correct:hover {
+  background: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+}
+
+.fj-judge-incorrect {
+  background: #f44336;
+  color: white;
+}
+
+.fj-judge-incorrect:hover {
+  background: #da190b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(244, 67, 54, 0.3);
+}
+
+.fj-judged {
+  padding: 0.75rem;
+  text-align: center;
+  border-radius: 6px;
+  font-weight: bold;
+  margin-top: 1rem;
+}
+
+.fj-judged.correct {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4caf50;
+  border: 2px solid #4caf50;
+}
+
+.fj-judged.incorrect {
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+  border: 2px solid #f44336;
+}
+
+.fj-complete {
+  font-size: 1.3rem;
+  color: #ffd700;
+  font-weight: bold;
+}

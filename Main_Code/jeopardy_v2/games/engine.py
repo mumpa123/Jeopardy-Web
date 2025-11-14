@@ -1,5 +1,6 @@
 import time
 import json
+import random
 from typing import Optional, Dict, List
 from redis import Redis
 from django.conf import settings
@@ -31,18 +32,22 @@ class GameStateManager:
                 decode_responses=True  # Automatically decode bytes to strings
         )
 
-        # Redis key patterns 
+        # Redis key patterns
         self.state_key = f"game:{self.game_id}:state"
         self.buzzer_key = f"game:{self.game_id}:buzzer"
         self.scores_key = f"game:{self.game_id}:scores"
+        self.current_player_key = f"game:{self.game_id}:current_player"
+        self.dd_state_key = f"game:{self.game_id}:dd_state"
+        self.fj_state_key = f"game:{self.game_id}:fj_state"
 
-    def initialize_game(self, episode_id: int, player_numbers: List[int]) -> Dict:
+    def initialize_game(self, episode_id: int, player_numbers: List[int], daily_doubles: List[int] = None) -> Dict:
         """
         Initialize game state in Redis when game starts.
 
         Args:
             episode_id: ID of the episode being played
             player_numbers: List of player numbers [1, 2, 3]
+            daily_doubles: List of clue IDs that are Daily Doubles
 
         Returns
             Initial game state dict
@@ -53,11 +58,11 @@ class GameStateManager:
                 'current_round': 'single',
                 'current_clue': '',  # Empty string instead of None
                 'revealed_clues': json.dumps([]),  # JSON serialize lists
-                'daily_doubles': json.dumps([]), # JSON serialize lists
+                'daily_doubles': json.dumps(daily_doubles or []), # JSON serialize lists
         }
 
         # Store state
-        self.redis.hset(self.state_key, mapping=initial_state) 
+        self.redis.hset(self.state_key, mapping=initial_state)
 
         # Initialize scores
         for player_num in player_numbers:
@@ -156,6 +161,52 @@ class GameStateManager:
         self.redis.delete(self.buzzer_key)
         self.redis.delete(f"{self.buzzer_key}:order")
 
+    def reset_game(self) -> Dict:
+        """
+        Reset the entire game state.
+        Clears all scores, revealed clues, and resets round to single.
+        Used when host clicks "Reset Game".
+
+        Returns:
+            Dict with reset scores
+        """
+        # Reset game state
+        reset_state = {
+            'current_round': 'single',
+            'current_clue': '',
+            'revealed_clues': json.dumps([]),
+        }
+        self.redis.hset(self.state_key, mapping=reset_state)
+
+        # Reset all scores to 0
+        scores = self.get_scores()
+        for player_number in scores.keys():
+            self.redis.hset(self.scores_key, player_number, 0)
+
+        # Reset buzzer
+        self.reset_buzzer()
+
+        # Clear DD state and current player
+        self.clear_dd_state()
+        self.redis.delete(self.current_player_key)
+
+        # Return reset scores
+        return {player_num: 0 for player_num in scores.keys()}
+
+    def lock_buzzer(self) -> None:
+        """
+        Lock the buzzer so players cannot buzz.
+        Used when clue is first revealed before host finishes reading.
+        """
+        self.redis.hset(self.buzzer_key, 'locked', 'true')
+
+    def unlock_buzzer(self) -> None:
+        """
+        Unlock the buzzer so players can buzz.
+        Used when host clicks "Finished Reading".
+        """
+        self.redis.hset(self.buzzer_key, 'locked', 'false')
+
     def handle_buzz(self, player_number: int, client_timestamp: int) -> Dict:
         """
         Handle a player buzzing in with atomic Redis operation.
@@ -183,6 +234,12 @@ class GameStateManager:
         local buzzer_key = KEYS[1]
         local player = ARGV[1]
         local timestamp = ARGV[2]
+
+        -- Check if buzzer is locked (host hasn't finished reading)
+        local locked = redis.call('HGET', buzzer_key, 'locked')
+        if locked == 'true' then
+            return {0, -1, -1}  -- Not accepted, buzzer is locked
+        end
 
         -- Check if this player already buzzed
         local already_buzzed = redis.call('HEXISTS', buzzer_key, 'player:' .. player)
@@ -269,6 +326,218 @@ class GameStateManager:
         # Reset buzzer for new clue
         self.reset_buzzer()
 
+    # ===== Daily Double Methods =====
+
+    def set_daily_doubles(self, clue_ids: List[int]) -> None:
+        """
+        Set the daily double clue IDs for this game.
+
+        Args:
+            clue_ids: List of clue IDs that are daily doubles
+        """
+        self.update_state({'daily_doubles': clue_ids})
+        # Set expiry
+        self.redis.expire(self.state_key, 86400)
+
+    def get_daily_doubles(self) -> List[int]:
+        """
+        Get the daily double clue IDs for this game.
+
+        Returns:
+            List of clue IDs that are daily doubles
+        """
+        state = self.get_state()
+        return state.get('daily_doubles', [])
+
+    def set_current_player(self, player_number: int) -> None:
+        """
+        Set the current player in control (for Daily Doubles).
+        This is the player who answered the last clue correctly.
+
+        Args:
+            player_number: Player number (1, 2, 3, etc.)
+        """
+        self.redis.set(self.current_player_key, player_number)
+        self.redis.expire(self.current_player_key, 86400)
+
+    def get_current_player(self) -> Optional[int]:
+        """
+        Get the current player in control.
+
+        Returns:
+            Player number or None if not set
+        """
+        player = self.redis.get(self.current_player_key)
+        return int(player) if player else None
+
+    def set_dd_state(self, state_dict: Dict) -> None:
+        """
+        Set Daily Double state (wager, stage, player).
+
+        Args:
+            state_dict: Dict with DD state fields
+                - wager: int (wager amount)
+                - stage: str (detected, revealed, wagering, answering, judged)
+                - player_number: int
+                - answer: str (optional, submitted answer)
+        """
+        # Convert all values to strings for Redis
+        processed = {k: str(v) for k, v in state_dict.items()}
+        self.redis.hset(self.dd_state_key, mapping=processed)
+        self.redis.expire(self.dd_state_key, 86400)
+
+    def get_dd_state(self) -> Dict:
+        """
+        Get Daily Double state.
+
+        Returns:
+            Dict with DD state fields (empty if no DD active)
+        """
+        state = self.redis.hgetall(self.dd_state_key)
+        if not state:
+            return {}
+
+        # Convert numeric fields back to int
+        result = {}
+        for key, value in state.items():
+            if key in ['wager', 'player_number']:
+                result[key] = int(value)
+            else:
+                result[key] = value
+        return result
+
+    def clear_dd_state(self) -> None:
+        """
+        Clear Daily Double state after DD is completed.
+        """
+        self.redis.delete(self.dd_state_key)
+
+    def validate_dd_wager(self, player_number: int, wager: int, round_type: str, score: int) -> Dict:
+        """
+        Validate a Daily Double wager.
+
+        Args:
+            player_number: Player making the wager
+            wager: Wager amount
+            round_type: 'single' or 'double'
+            score: Player's current score
+
+        Returns:
+            Dict with:
+                - valid: bool
+                - error: str (if invalid)
+                - min_wager: int
+                - max_wager: int
+        """
+        min_wager = 5
+        max_clue_value = 1000 if round_type == 'single' else 2000
+
+        # Max wager is either the max clue value or current score, whichever is higher
+        # Even with $0 or negative score, player can wager up to max clue value
+        max_wager = max(max_clue_value, score) if score > 0 else max_clue_value
+
+        if wager < min_wager:
+            return {
+                'valid': False,
+                'error': f'Wager must be at least ${min_wager}',
+                'min_wager': min_wager,
+                'max_wager': max_wager
+            }
+
+        if wager > max_wager:
+            return {
+                'valid': False,
+                'error': f'Wager cannot exceed ${max_wager}',
+                'min_wager': min_wager,
+                'max_wager': max_wager
+            }
+
+        return {
+            'valid': True,
+            'min_wager': min_wager,
+            'max_wager': max_wager
+        }
+
+    # Final Jeopardy state management
+
+    def set_fj_state(self, state: Dict) -> None:
+        """Set Final Jeopardy state."""
+        self.redis.hset(self.fj_state_key, mapping={
+            k: json.dumps(v) if isinstance(v, (dict, list)) else str(v)
+            for k, v in state.items()
+        })
+        self.redis.expire(self.fj_state_key, 86400)  # 24 hour expiry
+
+    def get_fj_state(self) -> Dict:
+        """Get Final Jeopardy state."""
+        state = self.redis.hgetall(self.fj_state_key)
+        if not state:
+            return {}
+        # Parse JSON values
+        parsed = {}
+        for k, v in state.items():
+            try:
+                parsed[k] = json.loads(v)
+            except (json.JSONDecodeError, TypeError):
+                parsed[k] = v
+        return parsed
+
+    def set_fj_wager(self, player_number: int, wager: int) -> None:
+        """Store player's Final Jeopardy wager."""
+        key = f"{self.fj_state_key}:wagers"
+        self.redis.hset(key, player_number, wager)
+        self.redis.expire(key, 86400)
+
+    def get_fj_wager(self, player_number: int) -> int:
+        """Get player's Final Jeopardy wager."""
+        key = f"{self.fj_state_key}:wagers"
+        wager = self.redis.hget(key, player_number)
+        return int(wager) if wager else 0
+
+    def get_all_fj_wagers(self) -> Dict[int, int]:
+        """Get all Final Jeopardy wagers."""
+        key = f"{self.fj_state_key}:wagers"
+        wagers = self.redis.hgetall(key)
+        return {int(k): int(v) for k, v in wagers.items()}
+
+    def set_fj_answer(self, player_number: int, answer: str) -> None:
+        """Store player's Final Jeopardy answer."""
+        key = f"{self.fj_state_key}:answers"
+        self.redis.hset(key, player_number, answer)
+        self.redis.expire(key, 86400)
+
+    def get_fj_answer(self, player_number: int) -> str:
+        """Get player's Final Jeopardy answer."""
+        key = f"{self.fj_state_key}:answers"
+        answer = self.redis.hget(key, player_number)
+        return answer if answer else ""
+
+    def get_all_fj_answers(self) -> Dict[int, str]:
+        """Get all Final Jeopardy answers."""
+        key = f"{self.fj_state_key}:answers"
+        answers = self.redis.hgetall(key)
+        return {int(k): v for k, v in answers.items()}
+
+    def set_fj_judged(self, player_number: int, correct: bool) -> None:
+        """Mark player's Final Jeopardy answer as judged."""
+        key = f"{self.fj_state_key}:judged"
+        self.redis.hset(key, player_number, '1' if correct else '0')
+        self.redis.expire(key, 86400)
+
+    def get_fj_judged(self, player_number: int) -> Optional[bool]:
+        """Get whether player's answer has been judged and if correct."""
+        key = f"{self.fj_state_key}:judged"
+        result = self.redis.hget(key, player_number)
+        if result is None:
+            return None
+        return result == '1'
+
+    def get_all_fj_judged(self) -> Dict[int, bool]:
+        """Get all judged results."""
+        key = f"{self.fj_state_key}:judged"
+        results = self.redis.hgetall(key)
+        return {int(k): v == '1' for k, v in results.items()}
+
     def cleanup(self) -> None:
         """
         Clean up game state from Redis.
@@ -278,6 +547,12 @@ class GameStateManager:
         self.redis.delete(self.buzzer_key)
         self.redis.delete(f"{self.buzzer_key}:order")
         self.redis.delete(self.scores_key)
+        self.redis.delete(self.current_player_key)
+        self.redis.delete(self.dd_state_key)
+        self.redis.delete(self.fj_state_key)
+        self.redis.delete(f"{self.fj_state_key}:wagers")
+        self.redis.delete(f"{self.fj_state_key}:answers")
+        self.redis.delete(f"{self.fj_state_key}:judged")
 
 
 

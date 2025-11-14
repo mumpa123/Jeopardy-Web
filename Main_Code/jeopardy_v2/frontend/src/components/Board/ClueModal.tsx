@@ -1,21 +1,28 @@
 import type { Clue } from '../../types/Episode';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, getClueValue } from '../../utils/formatters';
 import './ClueModal.css';
 
 interface ClueModalProps {
   clue: Clue | null;
+  currentRound: 'single' | 'double' | 'final';
   onClose: () => void;
   showAnswer?: boolean;
+  buzzerEnabled?: boolean;
 }
 
-export function ClueModal({ clue, onClose, showAnswer = false }: ClueModalProps) {
+export function ClueModal({ clue, currentRound, onClose, showAnswer = false, buzzerEnabled = false }: ClueModalProps) {
   if (!clue) return null;
+
+  // Calculate the correct value based on position and round
+  const displayValue = currentRound === 'final'
+    ? clue.value
+    : getClueValue(clue.position, currentRound);
 
   return (
     <div className="clue-modal-overlay" onClick={onClose}>
-      <div className="clue-modal" onClick={(e) => e.stopPropagation()}>
+      <div className={`clue-modal ${buzzerEnabled ? 'buzzer-active' : ''}`} onClick={(e) => e.stopPropagation()}>
         <div className="clue-value-header">
-          {formatCurrency(clue.value)}
+          {formatCurrency(displayValue)}
         </div>
 
         <div className="clue-content">
@@ -30,16 +37,6 @@ export function ClueModal({ clue, onClose, showAnswer = false }: ClueModalProps)
             </div>
           )}
         </div>
-
-        {clue.is_daily_double && (
-          <div className="daily-double-indicator">
-            DAILY DOUBLE
-          </div>
-        )}
-
-        <button className="close-button" onClick={onClose}>
-          ×
-        </button>
       </div>
     </div>
   );

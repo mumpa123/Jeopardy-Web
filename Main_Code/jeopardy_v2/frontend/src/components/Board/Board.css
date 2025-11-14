@@ -16,7 +16,7 @@
 .category-header {
   background-image: linear-gradient(to right, rgb(1, 27, 172), rgb(0, 19, 150));
   color: white;
-  padding: 1.5rem 0.5rem;
+  padding: 1rem 0.5rem;
   text-align: center;
   font-weight: bold;
   font-size: 2.75rem;
@@ -24,11 +24,13 @@
   text-transform: uppercase;
   border: 2px solid black;
   border-bottom: 8px solid black;
-  min-height: 15vh;
+  height: 120px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
 }
 
 .clue-row {
@@ -50,9 +52,8 @@
   }
 
   .category-header {
-    font-size: 0.9rem;
-    padding: 1rem 0.5rem;
-    min-height: 60px;
+    height: 80px;
+    padding: 0.75rem 0.5rem;
   }
 }
 
@@ -67,8 +68,7 @@
   }
 
   .category-header {
-    font-size: 0.7rem;
+    height: 60px;
     padding: 0.5rem 0.25rem;
-    min-height: 50px;
   }
 }

@@ -3,11 +3,7 @@ import './GameControls.css';
 interface GameControlsProps {
   currentRound: 'single' | 'double' | 'final';
   gameStatus: 'waiting' | 'active' | 'completed';
-  currentClue: any;
   onStartRound: (round: 'single' | 'double' | 'final') => void;
-  onMarkCorrect: () => void;
-  onMarkIncorrect: () => void;
-  onNextClue: () => void;
   onEndGame: () => void;
   onResetGame?: () => void;
 }
@@ -15,11 +11,7 @@ interface GameControlsProps {
 export function GameControls({
   currentRound,
   gameStatus,
-  currentClue,
   onStartRound,
-  onMarkCorrect,
-  onMarkIncorrect,
-  onNextClue,
   onEndGame,
   onResetGame
 }: GameControlsProps) {
@@ -53,39 +45,6 @@ export function GameControls({
             Final Jeopardy
           </button>
         </div>
-      </div>
-
-      {/* Answer Judgment (only show when clue is active) */}
-      {currentClue && (
-        <div className="control-section">
-          <h4>Judge Answer</h4>
-          <div className="judgment-buttons">
-            <button
-              className="judgment-button correct"
-              onClick={onMarkCorrect}
-            >
-              ✓ Correct
-            </button>
-            <button
-              className="judgment-button incorrect"
-              onClick={onMarkIncorrect}
-            >
-              ✗ Incorrect
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Navigation */}
-      <div className="control-section">
-        <h4>Navigation</h4>
-        <button
-          className="nav-button next-clue"
-          onClick={onNextClue}
-          disabled={!currentClue}
-        >
-          Next Clue
-        </button>
       </div>
 
       {/* Game Management */}

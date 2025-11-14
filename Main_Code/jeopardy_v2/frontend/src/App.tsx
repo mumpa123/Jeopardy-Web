@@ -3,6 +3,7 @@ import { TestView } from './views/TestView/TestView';
 import { PlayerView } from './views/PlayerView/PlayerView';
 import { HostView } from './views/HostView/HostView';
 import { BoardView } from './views/BoardView/BoardView';
+import { GameLobby } from './views/GameLobby/GameLobby';
 
 function Home() {
   return (
@@ -19,6 +20,24 @@ function Home() {
         maxWidth: '600px',
         margin: '0 auto'
       }}>
+        <Link
+          to="/lobby"
+          style={{
+            fontSize: '1.5rem',
+            padding: '1.5rem 2rem',
+            background: 'linear-gradient(135deg, #f39c12, #e67e22)',
+            color: 'white',
+            textDecoration: 'none',
+            borderRadius: '8px',
+            border: '3px solid black',
+            fontWeight: 'bold',
+            width: '100%',
+            display: 'block',
+            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)'
+          }}
+        >
+          🎮 CREATE NEW GAME
+        </Link>
         <Link
           to="/test"
           style={{
@@ -37,7 +56,7 @@ function Home() {
           Test View (Board Components)
         </Link>
         <Link
-          to="/host/1/1"
+          to="/host/12345678-1234-1234-1234-123456789abc"
           style={{
             fontSize: '1.2rem',
             padding: '1rem 2rem',
@@ -51,10 +70,10 @@ function Home() {
             display: 'block'
           }}
         >
-          Host Interface
+          Host Interface (Test Game)
         </Link>
         <Link
-          to="/player/Alice/1"
+          to="/player/12345678-1234-1234-1234-123456789abc/Alice/1"
           style={{
             fontSize: '1.2rem',
             padding: '1rem 2rem',
@@ -68,10 +87,10 @@ function Home() {
             display: 'block'
           }}
         >
-          Player 1 Interface
+          Player 1 Interface (Test Game)
         </Link>
         <Link
-          to="/board/1/1"
+          to="/board/12345678-1234-1234-1234-123456789abc"
           style={{
             fontSize: '1.2rem',
             padding: '1rem 2rem',
@@ -85,7 +104,7 @@ function Home() {
             display: 'block'
           }}
         >
-          Board View (Display Only)
+          Board View (Test Game)
         </Link>
       </div>
     </div>
@@ -96,10 +115,11 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/lobby" element={<GameLobby />} />
       <Route path="/test" element={<TestView />} />
-      <Route path="/host/:season/:episode" element={<HostView />} />
-      <Route path="/player/:playerName/:playerNumber" element={<PlayerView />} />
-      <Route path="/board/:season/:episode" element={<BoardView />} />
+      <Route path="/host/:gameId" element={<HostView />} />
+      <Route path="/player/:gameId/:playerName/:playerNumber" element={<PlayerView />} />
+      <Route path="/board/:gameId" element={<BoardView />} />
     </Routes>
   );
 }

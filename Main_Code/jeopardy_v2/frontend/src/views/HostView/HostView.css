@@ -7,9 +7,9 @@
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 2rem;
-  padding: 2rem;
-  max-width: 1800px;
-  margin: 0 auto;
+  padding: 2rem 2rem 2rem 0;
+  max-width: 100%;
+  margin: 0;
 }
 
 .host-left {
@@ -18,11 +18,27 @@
   gap: 1.5rem;
 }
 
-.board-container {
+/* Outer board-container wrapper in HostView */
+.host-left > .board-container {
   background: white;
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: none !important;
+}
+
+/* Inner board-container from Board component - align left and add single border */
+.host-view .board-container .board-container {
+  border: 2px solid #333;
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin: 0;
+  margin-left: 0;
+}
+
+/* Center ScoreDisplay items in HostView */
+.host-view .score-display {
+  justify-content: center;
 }
 
 .host-right {
@@ -83,4 +99,37 @@
   .host-right {
     gap: 1rem;
   }
+}
+
+/* Score Adjustments Section */
+.score-adjustments-section {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.toggle-score-adjustments {
+  width: 100%;
+  padding: 1rem;
+  background: #f8f9fa;
+  border: none;
+  border-bottom: 1px solid #e0e0e0;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s ease;
+}
+
+.toggle-score-adjustments:hover {
+  background: #e9ecef;
+}
+
+.toggle-score-adjustments:active {
+  background: #dee2e6;
 }

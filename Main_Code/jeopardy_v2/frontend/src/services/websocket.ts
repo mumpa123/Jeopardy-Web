@@ -24,7 +24,7 @@ export class GameWebSocket {
    */
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
-      const wsUrl = `ws://127.0.0.1:8000/ws/game/${this.gameId}/`;
+      const wsUrl = `ws://192.168.1.16:8000/ws/game/${this.gameId}/`;
 
       console.log('Connecting to WebSocket:', wsUrl);
       this.ws = new WebSocket(wsUrl);

@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'ITC_Korinna';
+  src: url('/fonts/korinna-bold-webfont.woff2') format('woff2'),
+       url('/fonts/korinna-bold-webfont.woff') format('woff');
+  font-weight: bold;
+  font-style: normal;
+}
+
 .clue-modal-overlay {
   position: fixed;
   top: 0;
@@ -22,16 +30,15 @@
 }
 
 .clue-modal {
-  background: #0066cc;
-  border: 8px solid #ffd700;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 1000px;
-  max-height: 90vh;
+  background-image: url('/blank_blue_jeopardy.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  width: 100vw;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   position: relative;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   animation: slideIn 0.3s ease;
 }
 
@@ -44,14 +51,37 @@
   }
 }
 
+.clue-modal.buzzer-active {
+  outline: 12px solid #ff0000;
+  outline-offset: -12px;
+  box-shadow: inset 0 0 50px rgba(255, 0, 0, 0.8), 0 0 50px rgba(255, 0, 0, 0.8);
+  animation: slideIn 0.3s ease, modalBuzzerPulse 1s ease-in-out infinite;
+}
+
+@keyframes modalBuzzerPulse {
+  0%, 100% {
+    outline-color: #ff0000;
+    box-shadow: inset 0 0 50px rgba(255, 0, 0, 0.8), 0 0 50px rgba(255, 0, 0, 0.8);
+  }
+  50% {
+    outline-color: #ff4444;
+    box-shadow: inset 0 0 60px rgba(255, 0, 0, 1), 0 0 60px rgba(255, 0, 0, 1);
+  }
+}
+
 .clue-value-header {
-  background: #ffd700;
-  color: #000;
-  font-size: 3rem;
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  background: rgba(255, 215, 0, 0.2);
+  color: #ffd700;
+  font-size: 2.55rem;
   font-weight: bold;
   text-align: center;
-  padding: 1rem;
-  border-radius: 4px 4px 0 0;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  border: 3px solid rgba(255, 215, 0, 0.5);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
 }
 
 .clue-content {
@@ -66,12 +96,17 @@
 
 .clue-question {
   color: white;
-  font-size: 2.5rem;
+  font-size: 6rem;
   text-align: center;
-  font-family: 'Arial', sans-serif;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-  line-height: 1.4;
+  font-family: 'ITC_Korinna', 'Korinna', 'Century Schoolbook', 'Georgia', serif;
+  text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.7);
+  line-height: 1.3;
   margin-bottom: 2rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  max-width: 80%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .clue-answer {
@@ -84,15 +119,23 @@
 
 .answer-label {
   color: #ffd700;
-  font-size: 1.5rem;
+  font-size: 2.1rem;
   font-weight: bold;
   margin-bottom: 1rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
 }
 
 .answer-text {
   color: white;
-  font-size: 2rem;
+  font-size: 4.25rem;
   font-style: italic;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+  text-transform: uppercase;
+  font-family: 'ITC_Korinna', 'Korinna', 'Century Schoolbook', 'Georgia', serif;
+  font-weight: bold;
+  max-width: 80%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .daily-double-indicator {
@@ -102,7 +145,7 @@
   transform: translate(-50%, -50%);
   background: #e74c3c;
   color: white;
-  font-size: 4rem;
+  font-size: 3.4rem;
   font-weight: bold;
   padding: 2rem 4rem;
   border-radius: 12px;
@@ -121,51 +164,32 @@
   }
 }
 
-.close-button {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: rgba(255, 255, 255, 0.2);
-  border: 2px solid white;
-  color: white;
-  font-size: 2rem;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.close-button:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
-}
-
 /* Responsive */
 @media (max-width: 768px) {
   .clue-value-header {
-    font-size: 2rem;
-    padding: 0.75rem;
+    font-size: 1.7rem;
+    padding: 0.75rem 1.5rem;
+    top: 1rem;
+    right: 1rem;
   }
 
   .clue-question {
-    font-size: 1.5rem;
+    font-size: 3.4rem;
     padding: 1.5rem;
+    max-width: 90%;
   }
 
   .answer-label {
-    font-size: 1.2rem;
+    font-size: 1.7rem;
   }
 
   .answer-text {
-    font-size: 1.5rem;
+    font-size: 2.55rem;
+    max-width: 90%;
   }
 
   .daily-double-indicator {
-    font-size: 2rem;
+    font-size: 2.1rem;
     padding: 1rem 2rem;
   }
 }

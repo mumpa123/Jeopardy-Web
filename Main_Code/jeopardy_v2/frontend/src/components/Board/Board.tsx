@@ -6,6 +6,8 @@ import './Board.css';
 interface BoardProps {
   categories: Category[];
   revealedClues: number[];
+  activeClueId?: number | null;
+  buzzerEnabled?: boolean;
   onClueClick: (clue: Clue) => void;
   round: 'single' | 'double';
   disabled?: boolean;
@@ -14,6 +16,8 @@ interface BoardProps {
 export function Board({
   categories,
   revealedClues,
+  activeClueId,
+  buzzerEnabled = false,
   onClueClick,
   round,
   disabled = false
@@ -21,12 +25,27 @@ export function Board({
   // Sort categories by position
   const sortedCategories = [...categories].sort((a, b) => a.position - b.position);
 
+  // Calculate font size based on text length
+  const getCategoryFontSize = (text: string): string => {
+    const length = text.length;
+    if (length <= 8) return '2.75rem';
+    if (length <= 12) return '2.2rem';
+    if (length <= 16) return '1.8rem';
+    if (length <= 20) return '1.5rem';
+    if (length <= 25) return '1.3rem';
+    return '1.1rem';
+  };
+
   return (
     <div className="board-container">
       {/* Category headers */}
       <div className="category-row">
         {sortedCategories.map(category => (
-          <div key={category.id} className="category-header">
+          <div
+            key={category.id}
+            className="category-header"
+            style={{ fontSize: getCategoryFontSize(category.name) }}
+          >
             {category.name}
           </div>
         ))}
@@ -45,6 +64,7 @@ export function Board({
             }
 
             const isRevealed = revealedClues.includes(clue.id);
+            const isActive = activeClueId === clue.id && buzzerEnabled;
             const value = getClueValue(row, round);
 
             return (
@@ -52,6 +72,8 @@ export function Board({
                 key={clue.id}
                 value={value}
                 isRevealed={isRevealed}
+                isDailyDouble={clue.is_daily_double}
+                isActive={isActive}
                 onClick={() => onClueClick(clue)}
                 disabled={disabled}
               />

@@ -67,12 +67,93 @@
   color: #333;
 }
 
+.clue-reading-section {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.finished-reading-button {
+  width: 100%;
+  padding: 1rem;
+  background: #e67e22;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.finished-reading-button:hover {
+  background: #d35400;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.judge-answer-section {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.judge-answer-section h4 {
+  margin: 0 0 0.75rem 0;
+  color: #666;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.judgment-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.judgment-button {
+  padding: 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.judgment-button.correct {
+  background: #27ae60;
+  color: white;
+}
+
+.judgment-button.correct:hover {
+  background: #229954;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.judgment-button.incorrect {
+  background: #e74c3c;
+  color: white;
+}
+
+.judgment-button.incorrect:hover {
+  background: #c0392b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
 .clue-answer-section {
   margin-top: 2rem;
 }
 
+.clue-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
 .toggle-answer-button {
-  width: 100%;
+  flex: 1;
   padding: 1rem;
   background: #3498db;
   color: white;
@@ -82,7 +163,19 @@
   font-weight: bold;
   cursor: pointer;
   transition: all 0.2s;
-  margin-bottom: 1rem;
+}
+
+.next-clue-button {
+  flex: 1;
+  padding: 1rem;
+  background: #9b59b6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .toggle-answer-button:hover {
@@ -97,6 +190,12 @@
 
 .toggle-answer-button.showing:hover {
   background: #229954;
+}
+
+.next-clue-button:hover {
+  background: #8e44ad;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .clue-answer {

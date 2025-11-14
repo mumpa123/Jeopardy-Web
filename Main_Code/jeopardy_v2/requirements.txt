@@ -1,0 +1,23 @@
+# Django and REST Framework
+Django==4.2.16
+djangorestframework==3.14.0
+
+# WebSocket support
+channels==4.0.0
+channels-redis==4.1.0
+daphne==4.0.0
+
+# CORS handling
+django-cors-headers==4.3.1
+
+# Database
+psycopg2-binary==2.9.9
+
+# Redis
+redis==5.0.1
+
+# Environment variables
+python-decouple==3.8
+
+# ASGI server (included with daphne, but listed for clarity)
+asgiref==3.7.2

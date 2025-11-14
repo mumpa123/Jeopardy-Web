@@ -55,7 +55,7 @@ export interface GameState {
 	episode_id: string;
 	status: string;
 	current_round: 'single' | 'double' | 'final';
-	current_clue: string | null; clue ID
+	current_clue: string | null; //clue ID
 	revealed_clues: number[]; // list of revealed clue IDs
 	daily_doubles: number[]; // list of daily double clue IDs
 }

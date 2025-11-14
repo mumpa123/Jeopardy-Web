@@ -4,8 +4,11 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django.shortcuts import get_object_or_404
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 from games.models import Episode, Category, Clue, Game, GameParticipant
+from games.engine import GameStateManager
 from users.models import Player
 from .serializers import (
         EpisodeSerializer, EpisodeListSerializer, CategorySerializer,
@@ -147,12 +150,55 @@ class GameViewSet(viewsets.ModelViewSet):
         Input: GameCreateSerializer (minimal fields)
         Output: GameSerializer (all fields including game_id)
         """
+        import random
+        from games.models import Clue
+        from games.engine import GameStateManager
+
         # Validate input with GameCreateSerializer
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         # Save the game
         game = serializer.save()
+
+        # Randomly select Daily Doubles for this game
+        # 1 DD for single jeopardy, 2 DDs for double jeopardy
+        episode = game.episode
+
+        # Get all clues for single jeopardy round
+        single_jeopardy_clues = list(
+            Clue.objects.filter(
+                category__episode=episode,
+                category__round_type='single'
+            ).values_list('id', flat=True)
+        )
+
+        # Get all clues for double jeopardy round
+        double_jeopardy_clues = list(
+            Clue.objects.filter(
+                category__episode=episode,
+                category__round_type='double'
+            ).values_list('id', flat=True)
+        )
+
+        # Randomly select DDs
+        daily_double_ids = []
+        if single_jeopardy_clues:
+            # Select 1 random DD from single jeopardy
+            daily_double_ids.append(random.choice(single_jeopardy_clues))
+
+        if double_jeopardy_clues and len(double_jeopardy_clues) >= 2:
+            # Select 2 random DDs from double jeopardy
+            daily_double_ids.extend(random.sample(double_jeopardy_clues, 2))
+        elif double_jeopardy_clues:
+            # If less than 2 clues, select what we can
+            daily_double_ids.extend(random.sample(double_jeopardy_clues, len(double_jeopardy_clues)))
+
+        # Initialize game engine and set Daily Doubles
+        engine = GameStateManager(str(game.game_id))
+        engine.set_daily_doubles(daily_double_ids)
+
+        print(f"[Game Create] Selected Daily Doubles: {daily_double_ids}")
 
         # Return full game data using GameSerializer
         output_serializer = GameSerializer(game)
@@ -202,18 +248,33 @@ class GameViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Check if player already in game
-        if GameParticipant.objects.filter(game=game, player=player).exists():
-            return Response(
-                    {'error': 'Player already in this game'},
-                    status=status.HTTP_400_BAD_REQUEST
-            )
+        # Check if player already in game (support rejoin)
+        existing_participant = GameParticipant.objects.filter(game=game, player=player).first()
+        if existing_participant:
+            # Player is rejoining - return existing participant
+            serializer = GameParticipantSerializer(existing_participant)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
-        # Add player to game
+        # Add player to game (new player)
         participant = GameParticipant.objects.create(
                 game=game,
                 player=player,
                 player_number=current_players + 1
+        )
+
+        # Initialize score in Redis
+        engine = GameStateManager(game_id)
+        engine.set_score(participant.player_number, 0)
+
+        # Broadcast player joined via WebSocket
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"game_{game_id}",
+            {
+                'type': 'player_joined',
+                'player_number': participant.player_number,
+                'player_name': player.display_name
+            }
         )
 
         serializer = GameParticipantSerializer(participant)
@@ -232,6 +293,54 @@ class GameViewSet(viewsets.ModelViewSet):
         # Later, we'll merge with Redis state
         serializer  = self.get_serializer(game)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def validate(self, request, game_id=None):
+        """
+        Custom endpoint: /api/games/{game_id}/validate/
+
+        Lightweight validation to check if game exists and get status.
+        Used for session persistence validation.
+        """
+        try:
+            game = self.get_object()
+            return Response({
+                'valid': True,
+                'status': game.status
+            })
+        except:
+            return Response({
+                'valid': False
+            }, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=True, methods=['get'])
+    def validate_player(self, request, game_id=None):
+        """
+        Custom endpoint: /api/games/{game_id}/validate_player/?player_id=123
+
+        Check if a player is in this game.
+        Used for session persistence validation.
+        """
+        game = self.get_object()
+        player_id = request.query_params.get('player_id')
+
+        if not player_id:
+            return Response(
+                {'error': 'player_id query parameter required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            participant = GameParticipant.objects.get(game=game, player_id=player_id)
+            return Response({
+                'valid': True,
+                'player_number': participant.player_number,
+                'player_name': participant.player.display_name
+            })
+        except GameParticipant.DoesNotExist:
+            return Response({
+                'valid': False
+            })
 
     @action(detail=True, methods=['post'])
     def start(self, request, game_id=None):
@@ -259,7 +368,7 @@ class GameViewSet(viewsets.ModelViewSet):
         # Update game status
         from django.utils import timezone
         game.status = 'active'
-        game.startd_at = timezone.now()
+        game.started_at = timezone.now()
         game.save()
 
         serializer = self.get_serializer(game)
