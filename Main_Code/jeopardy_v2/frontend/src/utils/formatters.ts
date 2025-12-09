@@ -77,3 +77,54 @@ export function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength - 3) + '...';
 }
+
+/**
+ * Clean HTML tags from clue/category text and replace broken media with placeholders
+ * Preserves text content and basic formatting (bold, italic, etc.)
+ */
+export function cleanClueText(text: string): string {
+  if (!text) return text;
+
+  let cleaned = text;
+
+  // Replace standalone image/video/audio tags with placeholders
+  cleaned = cleaned.replace(/<img[^>]*>/gi, ' [missing image] ');
+  cleaned = cleaned.replace(/<video[^>]*>.*?<\/video>/gi, ' [missing video] ');
+  cleaned = cleaned.replace(/<audio[^>]*>.*?<\/audio>/gi, ' [missing audio] ');
+
+  // For links to media files, extract the link text and add a placeholder
+  // Pattern: <a href="...image.jpg">Link Text</a> -> Link Text [missing image]
+  cleaned = cleaned.replace(/<a[^>]*href[^>]*\.(jpg|jpeg|png|gif|bmp|svg|webp)[^>]*>(.*?)<\/a>/gi, (match, ext, linkText) => {
+    return linkText ? `${linkText} [missing image]` : '[missing image]';
+  });
+
+  cleaned = cleaned.replace(/<a[^>]*href[^>]*\.(mp4|webm|avi|mov|wmv|flv)[^>]*>(.*?)<\/a>/gi, (match, ext, linkText) => {
+    return linkText ? `${linkText} [missing video]` : '[missing video]';
+  });
+
+  cleaned = cleaned.replace(/<a[^>]*href[^>]*\.(mp3|wav|ogg|m4a)[^>]*>(.*?)<\/a>/gi, (match, ext, linkText) => {
+    return linkText ? `${linkText} [missing audio]` : '[missing audio]';
+  });
+
+  // Remove any remaining anchor tags but keep their text content
+  cleaned = cleaned.replace(/<a[^>]*>(.*?)<\/a>/gi, '$1');
+
+  // Keep basic formatting tags (bold, italic, underline, em, strong)
+  // These will be preserved as HTML
+  // Remove all other HTML tags except formatting ones
+  cleaned = cleaned.replace(/<(?!\/?(?:b|i|u|em|strong|br)\b)[^>]+>/gi, '');
+
+  // Decode common HTML entities
+  cleaned = cleaned.replace(/&nbsp;/g, ' ');
+  cleaned = cleaned.replace(/&amp;/g, '&');
+  cleaned = cleaned.replace(/&lt;/g, '<');
+  cleaned = cleaned.replace(/&gt;/g, '>');
+  cleaned = cleaned.replace(/&quot;/g, '"');
+  cleaned = cleaned.replace(/&#39;/g, "'");
+  cleaned = cleaned.replace(/&apos;/g, "'");
+
+  // Clean up extra whitespace
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+  return cleaned;
+}

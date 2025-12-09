@@ -9,6 +9,7 @@ import { GameWebSocket } from '../../services/websocket';
 import type { IncomingMessage } from '../../types/WebSocket';
 import { api } from '../../services/api';
 import { getSession, saveSession, clearSession, type SessionData } from '../../services/sessionManager';
+import { cleanClueText } from '../../utils/formatters';
 import './PlayerView.css';
 
 export function PlayerView() {
@@ -23,10 +24,13 @@ export function PlayerView() {
   const [score, setScore] = useState(0);
   const [canBuzz, setCanBuzz] = useState(false);
   const [buzzed, setBuzzed] = useState(false);
+  const [unlockToken, setUnlockToken] = useState<number | null>(null); // Token for validating buzzes
   const [showWagerInput, setShowWagerInput] = useState(false);
   const [showAnswerInput, setShowAnswerInput] = useState(false);
   const [currentClue, setCurrentClue] = useState<string>('');
   const [status, setStatus] = useState('Enter your name to join...');
+  const [buzzCooldown, setBuzzCooldown] = useState(0); // Cooldown in seconds
+  const [cooldownInterval, setCooldownInterval] = useState<NodeJS.Timeout | null>(null);
 
   // Daily Double state
   const [isDailyDouble, setIsDailyDouble] = useState(false);
@@ -49,6 +53,22 @@ export function PlayerView() {
 
   // WebSocket connection
   const wsRef = useRef<GameWebSocket | null>(null);
+
+  // Audio ref for FJ music
+  const fjMusicAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize audio
+  useEffect(() => {
+    fjMusicAudioRef.current = new Audio('/final_jeopardy_music.mp3');
+
+    // Cleanup on unmount
+    return () => {
+      if (fjMusicAudioRef.current) {
+        fjMusicAudioRef.current.pause();
+        fjMusicAudioRef.current = null;
+      }
+    };
+  }, []);
 
   // Check for existing session on mount
   useEffect(() => {
@@ -221,13 +241,19 @@ export function PlayerView() {
         break;
 
       case 'clue_revealed':
-        setCurrentClue(message.clue.question);
+        setCurrentClue(cleanClueText(message.clue.question));
         setCanBuzz(false); // Buzzer locked until host finishes reading
         setBuzzed(false);
         setStatus('Host is reading the clue...');
         // Normal clue, not a DD
         setIsDailyDouble(false);
         setIsMyDailyDouble(false);
+        // Clear cooldown for new clue
+        setBuzzCooldown(0);
+        if (cooldownInterval) {
+          clearInterval(cooldownInterval);
+          setCooldownInterval(null);
+        }
         break;
 
       case 'daily_double_detected':
@@ -264,7 +290,7 @@ export function PlayerView() {
 
       case 'dd_clue_shown':
         // Host has revealed the clue - NOW show it!
-        setCurrentClue(message.clue.question);
+        setCurrentClue(cleanClueText(message.clue.question));
         if (message.player_number === playerNumber) {
           setStatus('Give your answer verbally to the host!');
         } else {
@@ -285,15 +311,41 @@ export function PlayerView() {
 
       case 'buzzer_enabled':
         setCanBuzz(true);
-        setStatus('You can buzz in now!');
+        // Store unlock token for buzz validation
+        if (message.unlock_token) {
+          setUnlockToken(message.unlock_token);
+        }
+        // Don't clear cooldown - players must wait full penalty time
+        if (buzzCooldown > 0) {
+          setStatus(`Buzzer enabled but you're in cooldown - wait ${Math.ceil(buzzCooldown)}s`);
+        } else {
+          setStatus('You can buzz in now!');
+        }
         break;
 
       case 'buzz_result':
         if (playerNumber && message.player_number === playerNumber) {
           if (message.accepted) {
             setStatus(message.winner === message.player_number ? 'You won the buzz!' : `You were #${message.position} to buzz`);
+          } else if (message.cooldown) {
+            // Buzz rejected due to cooldown or early buzz
+            const cooldownTime = Math.ceil(message.cooldown_remaining);
+            if (message.position === -2) {
+              // Already in cooldown
+              setStatus(`Cooldown active - wait ${cooldownTime}s`);
+            } else {
+              // Early buzz or spam attempt
+              setStatus(`Too early! Wait ${cooldownTime}s`);
+            }
+            // Reset buzzed state so they can try again after cooldown
+            setBuzzed(false);
+            // Start cooldown timer
+            setBuzzCooldown(message.cooldown_remaining);
+            startCooldownTimer(message.cooldown_remaining);
           } else {
             setStatus('Buzz rejected - too late');
+            // Reset buzzed state in case they want to wait for next clue
+            setBuzzed(false);
           }
         }
         break;
@@ -317,6 +369,12 @@ export function PlayerView() {
         setIsMyDailyDouble(false);
         setShowWagerInput(false);
         setShowAnswerInput(false);
+        // Clear cooldown
+        setBuzzCooldown(0);
+        if (cooldownInterval) {
+          clearInterval(cooldownInterval);
+          setCooldownInterval(null);
+        }
         if (message.scores && playerNumber) {
           setScore(message.scores[String(playerNumber)] || 0);
         }
@@ -345,6 +403,12 @@ export function PlayerView() {
         }
         break;
 
+      case 'round_changed':
+        console.log('[PlayerView] Round changed to:', message.round);
+        setCurrentRound(message.round);
+        setStatus(`${message.round === 'single' ? 'Single' : 'Double'} Jeopardy started!`);
+        break;
+
       case 'fj_category_shown':
         console.log('[PlayerView] Final Jeopardy category shown:', message.category);
         setIsFinalJeopardy(true);
@@ -367,16 +431,34 @@ export function PlayerView() {
         break;
 
       case 'fj_clue_revealed':
-        console.log('[PlayerView] FJ clue revealed, timer started');
-        setCurrentClue(message.clue.question);
+        console.log('[PlayerView] FJ clue revealed - waiting for host to start timer');
+        setCurrentClue(cleanClueText(message.clue.question));
+        setStatus('Clue revealed! Wait for host to finish reading...');
+        // Don't start timer or show answer input yet
+        break;
+
+      case 'fj_timer_started':
+        console.log('[PlayerView] FJ timer started');
         setFjShowAnswerInput(true);
         setFjTimeRemaining(message.timer_duration);
         setStatus('Type your answer! Timer is running.');
+        // Play FJ music
+        if (fjMusicAudioRef.current) {
+          fjMusicAudioRef.current.currentTime = 0;
+          fjMusicAudioRef.current.play().catch(err =>
+            console.error('[PlayerView] Failed to play FJ music:', err)
+          );
+        }
         // Start countdown timer
         const fjTimerInterval = setInterval(() => {
           setFjTimeRemaining(prev => {
             if (prev === null || prev <= 1) {
               clearInterval(fjTimerInterval);
+              // Stop music when timer expires
+              if (fjMusicAudioRef.current) {
+                fjMusicAudioRef.current.pause();
+                fjMusicAudioRef.current.currentTime = 0;
+              }
               return 0;
             }
             return prev - 1;
@@ -401,6 +483,24 @@ export function PlayerView() {
         }
         break;
 
+      case 'game_completed':
+        console.log('[PlayerView] Game completed');
+        setStatus('Game Completed!');
+        // Keys are strings from backend
+        if (message.final_scores && message.final_scores[String(playerNumber)]) {
+          setScore(message.final_scores[String(playerNumber)]);
+        }
+        break;
+
+      case 'game_abandoned':
+        console.log('[PlayerView] Game abandoned');
+        setStatus('Game Abandoned');
+        // Keys are strings from backend
+        if (message.final_scores && message.final_scores[String(playerNumber)]) {
+          setScore(message.final_scores[String(playerNumber)]);
+        }
+        break;
+
       case 'error':
         console.error('[PlayerView] Error from server:', message.message);
         setStatus(`Error: ${message.message}`);
@@ -411,19 +511,67 @@ export function PlayerView() {
     }
   };
 
-  const handleBuzz = () => {
-    if (canBuzz && !buzzed && playerNumber) {
-      setBuzzed(true);
-      setCanBuzz(false);
+  // Start cooldown countdown timer
+  const startCooldownTimer = (initialSeconds: number) => {
+    // Clear any existing interval
+    if (cooldownInterval) {
+      clearInterval(cooldownInterval);
+    }
 
-      // Send buzz via WebSocket
-      if (wsRef.current?.isConnected()) {
-        wsRef.current.send({
-          type: 'buzz',
-          player_number: playerNumber,
-          timestamp: Date.now()
-        });
-        console.log('Player buzzed!');
+    let remainingTime = initialSeconds;
+
+    const interval = setInterval(() => {
+      remainingTime -= 0.1; // Update every 100ms for smooth countdown
+
+      if (remainingTime <= 0) {
+        setBuzzCooldown(0);
+        clearInterval(interval);
+        setCooldownInterval(null);
+      } else {
+        setBuzzCooldown(remainingTime);
+      }
+    }, 100);
+
+    setCooldownInterval(interval);
+  };
+
+  // Clean up cooldown interval on unmount
+  useEffect(() => {
+    return () => {
+      if (cooldownInterval) {
+        clearInterval(cooldownInterval);
+      }
+    };
+  }, [cooldownInterval]);
+
+  const handleBuzz = () => {
+    // Check if in cooldown
+    if (buzzCooldown > 0) {
+      setStatus(`Cooldown active - wait ${Math.ceil(buzzCooldown)}s`);
+      return;
+    }
+
+    // Check if already buzzed for this clue
+    if (buzzed) {
+      return;
+    }
+
+    // Allow buzz attempt even if buzzer not enabled yet (server will enforce and start cooldown)
+    if (playerNumber && wsRef.current?.isConnected()) {
+      setBuzzed(true); // Prevent multiple rapid clicks
+
+      // Send buzz via WebSocket with unlock token for validation
+      wsRef.current.send({
+        type: 'buzz',
+        player_number: playerNumber,
+        timestamp: Date.now(),
+        unlock_token: unlockToken  // Include token received from buzzer_enabled
+      });
+      console.log('Player buzzed with unlock_token:', unlockToken);
+
+      // If buzz was successful (buzzer enabled), update state
+      if (canBuzz) {
+        setCanBuzz(false);
       }
     }
   };
@@ -587,7 +735,7 @@ export function PlayerView() {
         {/* Current Clue (if active) */}
         {currentClue && (
           <div className="current-clue-display">
-            <p>{currentClue}</p>
+            <p dangerouslySetInnerHTML={{ __html: currentClue }} />
           </div>
         )}
 
@@ -598,6 +746,7 @@ export function PlayerView() {
               onBuzz={handleBuzz}
               disabled={!canBuzz}
               buzzed={buzzed}
+              cooldown={buzzCooldown}
             />
           </div>
         )}

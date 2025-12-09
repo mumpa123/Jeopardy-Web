@@ -39,6 +39,10 @@ class GameStateManager:
         self.current_player_key = f"game:{self.game_id}:current_player"
         self.dd_state_key = f"game:{self.game_id}:dd_state"
         self.fj_state_key = f"game:{self.game_id}:fj_state"
+        self.cooldown_key = f"game:{self.game_id}:buzz_cooldowns"
+
+        # Buzz cooldown duration in seconds
+        self.BUZZ_COOLDOWN_SECONDS = 2
 
     def initialize_game(self, episode_id: int, player_numbers: List[int], daily_doubles: List[int] = None) -> Dict:
         """
@@ -200,14 +204,21 @@ class GameStateManager:
         """
         self.redis.hset(self.buzzer_key, 'locked', 'true')
 
-    def unlock_buzzer(self) -> None:
+    def unlock_buzzer(self) -> int:
         """
         Unlock the buzzer so players can buzz.
         Used when host clicks "Finished Reading".
-        """
-        self.redis.hset(self.buzzer_key, 'locked', 'false')
 
-    def handle_buzz(self, player_number: int, client_timestamp: int) -> Dict:
+        Returns:
+            unlock_token: A unique token for this unlock event
+        """
+        # Generate a unique unlock token (microsecond timestamp)
+        unlock_token = int(time.time() * 1_000_000)
+        self.redis.hset(self.buzzer_key, 'locked', 'false')
+        self.redis.hset(self.buzzer_key, 'unlock_token', str(unlock_token))
+        return unlock_token
+
+    def handle_buzz(self, player_number: int, client_timestamp: int, unlock_token: int = None) -> Dict:
         """
         Handle a player buzzing in with atomic Redis operation.
 
@@ -217,6 +228,7 @@ class GameStateManager:
         Args:
             player_number: Which player buzzed (1, 2, or 3)
             client_timestamp: When client thinks they buzzed (milliseconds)
+            unlock_token: The unlock token received by client (prevents race conditions)
 
         Returns:
             Dict with:
@@ -224,27 +236,70 @@ class GameStateManager:
                 - position: int (order of buzz, 1st, 2nd, etc.)
                 - winner: int or None (player_number of winner)
                 - server_timestamp_us: int (servertimestamp in microseconds)
+                - cooldown: bool (was buzz rejected due to cooldown?)
+                - cooldown_remaining: float (seconds remaining in cooldown, if applicable)
         """
         # Get precise server timestamp
         server_timestamp_us = int(time.time() * 1_000_000)
+        current_time_seconds = time.time()
 
-        # Lua script for atomic buzz handling
+        # Lua script for atomic buzz handling with token-based validation
         # This entire script runs as one atomic operation!
         lua_script = """
         local buzzer_key = KEYS[1]
+        local cooldown_key = KEYS[2]
         local player = ARGV[1]
         local timestamp = ARGV[2]
+        local current_time = tonumber(ARGV[3])
+        local cooldown_duration = tonumber(ARGV[4])
+        local client_unlock_token = ARGV[5]  -- Token client received from unlock broadcast
+
+        -- Check if player is in cooldown
+        local last_buzz_time = redis.call('HGET', cooldown_key, player)
+        if last_buzz_time then
+            local time_since_last_buzz = current_time - tonumber(last_buzz_time)
+            if time_since_last_buzz < cooldown_duration then
+                local remaining = cooldown_duration - time_since_last_buzz
+                return {0, -2, -1, remaining}  -- Not accepted, in cooldown, remaining time
+            end
+        end
 
         -- Check if buzzer is locked (host hasn't finished reading)
         local locked = redis.call('HGET', buzzer_key, 'locked')
         if locked == 'true' then
-            return {0, -1, -1}  -- Not accepted, buzzer is locked
+            -- Start cooldown even for early buzz attempts
+            redis.call('HSET', cooldown_key, player, current_time)
+            redis.call('EXPIRE', cooldown_key, 86400)  -- 24 hour expiry
+            return {0, -1, -1, cooldown_duration}  -- Not accepted, buzzer is locked, start cooldown
+        end
+
+        -- Validate unlock token (prevents race conditions)
+        -- Client must provide the unlock token they received from the buzzer_enabled broadcast
+        local server_unlock_token = redis.call('HGET', buzzer_key, 'unlock_token')
+
+        -- If no unlock token exists yet, accept buzz (backward compatibility for first unlock)
+        if server_unlock_token then
+            -- Client must have provided a token
+            if not client_unlock_token or client_unlock_token == '' or client_unlock_token == 'nil' then
+                -- Buzz sent before client received unlock broadcast - reject with cooldown
+                redis.call('HSET', cooldown_key, player, current_time)
+                redis.call('EXPIRE', cooldown_key, 86400)
+                return {0, -1, -1, cooldown_duration}  -- Not accepted, no valid unlock token
+            end
+
+            -- Tokens must match
+            if client_unlock_token ~= server_unlock_token then
+                -- Stale buzz from previous unlock event - reject with cooldown
+                redis.call('HSET', cooldown_key, player, current_time)
+                redis.call('EXPIRE', cooldown_key, 86400)
+                return {0, -1, -1, cooldown_duration}  -- Not accepted, token mismatch
+            end
         end
 
         -- Check if this player already buzzed
         local already_buzzed = redis.call('HEXISTS', buzzer_key, 'player:' .. player)
         if already_buzzed == 1 then
-            return {0, -1, -1}  -- Not accepted, already buzzed
+            return {0, -1, -1, 0}  -- Not accepted, already buzzed
         end
 
         -- Increment buzz count
@@ -254,34 +309,47 @@ class GameStateManager:
         redis.call('HSET', buzzer_key, 'player:' .. player, timestamp)
         redis.call('RPUSH', buzzer_key .. ':order', player)
 
+        -- Update cooldown timestamp
+        redis.call('HSET', cooldown_key, player, current_time)
+        redis.call('EXPIRE', cooldown_key, 86400)  -- 24 hour expiry
+
         -- If first buzz, lock buzzer and set winner
         if count == 1 then
             redis.call('HSET', buzzer_key, 'locked', '1')
             redis.call('HSET', buzzer_key, 'winner', player)
             redis.call('HSET', buzzer_key, 'winner_timestamp', timestamp)
-            return {1, count, tonumber(player)}  -- Accepted, first you're the winner!
+            return {1, count, tonumber(player), 0}  -- Accepted, first you're the winner!
         end
-
 
         -- Not first, but buzz recorded
         local winner = redis.call('HGET', buzzer_key, 'winner')
-        return {1, count, tonumber(winner)} -- Accepted, but not winner
+        return {1, count, tonumber(winner), 0} -- Accepted, but not winner
         """
 
         # Execute Lua script
         result = self.redis.eval(
                 lua_script,
-                1,  # Number of keys
+                2,  # Number of keys
                 self.buzzer_key,  # KEYS[1]
+                self.cooldown_key,  # KEYS[2]
                 player_number,    # ARGV[1]
-                server_timestamp_us  # ARGV[2]
+                server_timestamp_us,  # ARGV[2]
+                current_time_seconds,  # ARGV[3]
+                self.BUZZ_COOLDOWN_SECONDS,  # ARGV[4]
+                str(unlock_token) if unlock_token else ''  # ARGV[5]
         )
+
+        # Determine if this was a cooldown rejection or early buzz
+        is_cooldown_rejection = result[1] == -2
+        is_early_buzz = result[1] == -1 and result[3] > 0  # Locked buzzer with cooldown started
 
         return {
                 'accepted': bool(result[0]),
                 'position': result[1],
                 'winner': result[2] if result[2] > 0 else None,
-                'server_timestamp_us': server_timestamp_us
+                'server_timestamp_us': server_timestamp_us,
+                'cooldown': is_cooldown_rejection or is_early_buzz,
+                'cooldown_remaining': float(result[3]) if result[3] > 0 else 0.0
         }
 
     def get_buzzer_state(self) -> Dict:
@@ -553,6 +621,7 @@ class GameStateManager:
         self.redis.delete(f"{self.fj_state_key}:wagers")
         self.redis.delete(f"{self.fj_state_key}:answers")
         self.redis.delete(f"{self.fj_state_key}:judged")
+        self.redis.delete(self.cooldown_key)
 
 
 

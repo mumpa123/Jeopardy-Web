@@ -3,12 +3,39 @@
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-height: 600px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar styling for better visibility */
+.score-controls::-webkit-scrollbar {
+  width: 8px;
+}
+
+.score-controls::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.score-controls::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.score-controls::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 .score-controls h3 {
   margin: 0 0 1.5rem 0;
   color: #333;
   font-size: 1.2rem;
+  position: sticky;
+  top: 0;
+  background: white;
+  padding-bottom: 0.5rem;
+  z-index: 1;
 }
 
 .player-score-control {

@@ -35,7 +35,6 @@ export function BuzzerQueue({ buzzQueue, onClear }: BuzzerQueueProps) {
             <div className="queue-position">{index + 1}</div>
             <div className="queue-player">
               <div className="player-name">{buzz.playerName}</div>
-              <div className="player-number">Player {buzz.playerNumber}</div>
             </div>
             {index === 0 && (
               <div className="winner-badge">WINNER</div>

@@ -119,6 +119,9 @@ export function HostView() {
   // Buzzer enabled state (starts false, set to true when host clicks "Finished Reading")
   const [buzzerEnabled, setBuzzerEnabled] = useState(false);
 
+  // Current player (who has control of the board)
+  const [currentPlayer, setCurrentPlayer] = useState<number | null>(null);
+
   // Score adjustments menu state
   const [showScoreAdjustments, setShowScoreAdjustments] = useState(false);
 
@@ -314,13 +317,12 @@ export function HostView() {
     switch (message.type) {
       case 'buzz_result':
         if (message.accepted && message.winner) {
-          // Add to buzz queue
-          const playerName = players.find(p => p.playerNumber === message.player_number)?.playerName || `Player ${message.player_number}`;
+          // Add to buzz queue - use player_name from message (sent by backend)
           setBuzzQueue(prev => [
             ...prev,
             {
               playerNumber: message.player_number,
-              playerName,
+              playerName: message.player_name || `Player ${message.player_number}`,
               timestamp: message.server_timestamp
             }
           ]);
@@ -351,6 +353,11 @@ export function HostView() {
             })));
             console.log('[HostView] Player scores updated from Redis (legacy mode)');
           }
+        }
+
+        // Set current player (who has control of the board)
+        if (message.current_player !== undefined) {
+          setCurrentPlayer(message.current_player);
         }
         break;
 
@@ -393,6 +400,10 @@ export function HostView() {
             ? { ...p, score: message.new_score }
             : p
         ));
+        // Update current player (who has control of the board)
+        if (message.current_player !== undefined) {
+          setCurrentPlayer(message.current_player);
+        }
         break;
 
       case 'return_to_board':
@@ -596,10 +607,16 @@ export function HostView() {
         break;
 
       case 'fj_clue_revealed':
-        console.log('[HostView] FJ clue revealed, timer started');
+        console.log('[HostView] FJ clue revealed - waiting for host to start timer');
         console.log('[HostView] FJ clue data:', message.clue);
-        setFjStage('clue_shown');
+        setFjStage('clue_revealed'); // New stage: clue revealed but timer not started
         setFjClue(message.clue); // Store the clue (includes question and correct answer)
+        // Don't set timer yet - wait for host to click "Finished Reading"
+        break;
+
+      case 'fj_timer_started':
+        console.log('[HostView] FJ timer started');
+        setFjStage('clue_shown'); // Move to timer-running stage
         setFjTimeRemaining(message.timer_duration);
         // Start countdown timer
         const timerInterval = setInterval(() => {
@@ -720,6 +737,55 @@ export function HostView() {
         ));
         break;
 
+      case 'round_changed':
+        console.log('[HostView] Round changed broadcast received:', message.round);
+        setCurrentRound(message.round);
+        setRevealedClues(message.revealed_clues);
+        setSelectedClue(null);
+        setShowAnswer(false);
+        setBuzzQueue([]);
+        setBuzzerEnabled(false);
+        // Update current player (especially important for Double Jeopardy start)
+        if (message.current_player !== undefined) {
+          setCurrentPlayer(message.current_player);
+        }
+        console.log('[HostView] Round updated to:', message.round);
+        break;
+
+      case 'game_completed':
+        console.log('[HostView] Game completed:', message);
+        setGameStatus('completed');
+        // Update final scores (keys are strings from backend)
+        if (message.final_scores) {
+          setPlayers(prev => prev.map(p => ({
+            ...p,
+            score: message.final_scores[String(p.playerNumber)] ?? p.score
+          })));
+        }
+        // Clear session when game ends
+        if (gameId) {
+          clearSession('host', gameId);
+          console.log('[HostView] Session cleared - game completed');
+        }
+        break;
+
+      case 'game_abandoned':
+        console.log('[HostView] Game abandoned:', message);
+        setGameStatus('abandoned');
+        // Update final scores (keys are strings from backend)
+        if (message.final_scores) {
+          setPlayers(prev => prev.map(p => ({
+            ...p,
+            score: message.final_scores[String(p.playerNumber)] ?? p.score
+          })));
+        }
+        // Clear session when game is abandoned
+        if (gameId) {
+          clearSession('host', gameId);
+          console.log('[HostView] Session cleared - game abandoned');
+        }
+        break;
+
       case 'error':
         console.error('[HostView] Error from server:', message.message);
         break;
@@ -795,6 +861,17 @@ export function HostView() {
     setShowAnswer(false);
     setBuzzQueue([]);
     console.log('Starting round:', round);
+
+    // Send round change message to all clients via WebSocket
+    if (wsRef.current?.isConnected()) {
+      wsRef.current.send({
+        type: 'start_round',
+        round: round
+      });
+      console.log('[HostView] Round change message sent:', round);
+    } else {
+      console.error('[HostView] Cannot change round - WebSocket not connected');
+    }
   };
 
   const handleMarkCorrect = () => {
@@ -814,6 +891,12 @@ export function HostView() {
       }
 
       console.log('Marked correct for', winner.playerName, 'value:', clueValue);
+
+      // Automatically advance to next clue since answer is correct
+      // Use setTimeout to allow score update to broadcast first
+      setTimeout(() => {
+        handleNextClue();
+      }, 300);
     }
   };
 
@@ -851,12 +934,25 @@ export function HostView() {
   };
 
   const handleEndGame = () => {
-    if (!gameId) return;
-    setGameStatus('completed');
-    console.log('Game ended');
-    // Clear session when game ends
-    clearSession('host', gameId);
-    console.log('[HostView] Session cleared - game ended');
+    if (!gameId || !ws.current) return;
+
+    if (confirm('Are you sure you want to end the game? This will mark it as completed.')) {
+      ws.current.send({
+        type: 'end_game'
+      });
+      console.log('[HostView] End game request sent');
+    }
+  };
+
+  const handleAbandonGame = () => {
+    if (!gameId || !ws.current) return;
+
+    if (confirm('Are you sure you want to abandon the game? This cannot be undone.')) {
+      ws.current.send({
+        type: 'abandon_game'
+      });
+      console.log('[HostView] Abandon game request sent');
+    }
   };
 
   const handleResetGame = () => {
@@ -930,6 +1026,15 @@ export function HostView() {
     }
   };
 
+  const handleStartFJTimer = () => {
+    if (wsRef.current?.isConnected()) {
+      wsRef.current.send({
+        type: 'start_fj_timer'
+      });
+      console.log('[HostView] Sent start_fj_timer message');
+    }
+  };
+
   const handleJudgeFJAnswer = (playerNumber: number, correct: boolean) => {
     if (wsRef.current?.isConnected()) {
       wsRef.current.send({
@@ -976,7 +1081,7 @@ export function HostView() {
       <div className="host-content">
         {/* Left Column: Board and Scores */}
         <div className="host-left">
-          <ScoreDisplay scores={scores} playerNames={playerNames} />
+          <ScoreDisplay scores={scores} playerNames={playerNames} currentPlayer={currentPlayer} />
           <div className="board-container">
             {currentCategories.length > 0 ? (
               <Board
@@ -1016,6 +1121,7 @@ export function HostView() {
                 timeRemaining={fjTimeRemaining}
                 onStartFinalJeopardy={handleStartFinalJeopardy}
                 onRevealClue={handleRevealFJClue}
+                onStartTimer={handleStartFJTimer}
                 onJudgeAnswer={handleJudgeFJAnswer}
                 onShowAnswers={handleShowFJAnswers}
               />
@@ -1095,6 +1201,7 @@ export function HostView() {
             gameStatus={gameStatus}
             onStartRound={handleStartRound}
             onEndGame={handleEndGame}
+            onAbandonGame={handleAbandonGame}
             onResetGame={handleResetGame}
           />
         </div>

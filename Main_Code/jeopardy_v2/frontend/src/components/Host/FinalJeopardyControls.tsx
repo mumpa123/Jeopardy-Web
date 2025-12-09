@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { cleanClueText } from '../../utils/formatters';
 import './FinalJeopardyControls.css';
 
-export type FJStage = 'not_started' | 'category_shown' | 'wagering' | 'clue_shown' | 'answering' | 'judging' | 'complete';
+export type FJStage = 'not_started' | 'category_shown' | 'wagering' | 'clue_revealed' | 'clue_shown' | 'answering' | 'judging' | 'complete';
 
 interface PlayerAnswer {
   playerNumber: number;
@@ -28,6 +29,7 @@ interface FinalJeopardyControlsProps {
   timeRemaining: number | null;  // null means timer not started
   onStartFinalJeopardy: () => void;
   onRevealClue: () => void;
+  onStartTimer: () => void;  // Start timer after revealing clue
   onJudgeAnswer: (playerNumber: number, correct: boolean) => void;
   onShowAnswers?: () => void;  // Manual trigger to show answers for judging
 }
@@ -40,6 +42,7 @@ export function FinalJeopardyControls({
   timeRemaining,
   onStartFinalJeopardy,
   onRevealClue,
+  onStartTimer,
   onJudgeAnswer,
   onShowAnswers
 }: FinalJeopardyControlsProps) {
@@ -123,7 +126,33 @@ export function FinalJeopardyControls({
           >
             Reveal Clue
           </button>
-          <p className="fj-hint">This will show the clue and start the 30-second timer</p>
+          <p className="fj-hint">This will show the clue to all players</p>
+        </div>
+      )}
+
+      {/* Stage: Clue Revealed - Waiting for host to finish reading */}
+      {stage === 'clue_revealed' && (
+        <div className="fj-stage">
+          {/* Display the clue question */}
+          {clue && (
+            <div className="fj-clue-display">
+              <p className="fj-clue-label">Final Jeopardy Clue:</p>
+              <div
+                className="fj-clue-question"
+                dangerouslySetInnerHTML={{ __html: cleanClueText(clue.question) }}
+              />
+            </div>
+          )}
+
+          <p className="fj-status">Read the clue aloud, then click below to start the timer.</p>
+
+          <button
+            className="fj-start-button"
+            onClick={onStartTimer}
+          >
+            Finished Reading - Start Timer
+          </button>
+          <p className="fj-hint">This will start the 30-second timer and play the Final Jeopardy music</p>
         </div>
       )}
 
@@ -134,7 +163,10 @@ export function FinalJeopardyControls({
           {clue && (
             <div className="fj-clue-display">
               <p className="fj-clue-label">Final Jeopardy Clue:</p>
-              <div className="fj-clue-question">{clue.question}</div>
+              <div
+                className="fj-clue-question"
+                dangerouslySetInnerHTML={{ __html: cleanClueText(clue.question) }}
+              />
             </div>
           )}
 
@@ -186,7 +218,7 @@ export function FinalJeopardyControls({
           {clue && (
             <div className="fj-correct-answer-box">
               <p className="fj-correct-label">Correct Answer:</p>
-              <div className="fj-correct-answer">{clue.answer}</div>
+              <div className="fj-correct-answer" dangerouslySetInnerHTML={{ __html: cleanClueText(clue.answer) }} />
             </div>
           )}
 

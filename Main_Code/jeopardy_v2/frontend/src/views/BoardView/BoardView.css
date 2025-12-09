@@ -104,6 +104,13 @@
   box-shadow: none;
   min-width: 0;
   height: 100px;
+  transition: background-image 0.3s ease, box-shadow 0.3s ease;
+}
+
+.board-view .score-item.current-player {
+  background-image: linear-gradient(to right, #ffd700, #ffed4e);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), inset 0 0 20px rgba(255, 255, 255, 0.2);
+  border-color: #b8860b;
 }
 
 .board-view .player-name {

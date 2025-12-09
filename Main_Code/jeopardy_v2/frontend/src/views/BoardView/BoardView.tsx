@@ -103,6 +103,7 @@ export function BoardView() {
   const [currentRound, setCurrentRound] = useState<'single' | 'double' | 'final'>('single');
   const [buzzerEnabled, setBuzzerEnabled] = useState(false);
   const [activeClueId, setActiveClueId] = useState<number | null>(null);
+  const [currentPlayer, setCurrentPlayer] = useState<number | null>(null);
 
   // Daily Double state
   const [isDailyDouble, setIsDailyDouble] = useState(false);
@@ -118,6 +119,28 @@ export function BoardView() {
 
   // WebSocket connection
   const wsRef = useRef<GameWebSocket | null>(null);
+
+  // Audio refs
+  const fjClueAudioRef = useRef<HTMLAudioElement | null>(null);
+  const fjMusicAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize audio
+  useEffect(() => {
+    fjClueAudioRef.current = new Audio('/final_jeopardy_clue_sound.mp3');
+    fjMusicAudioRef.current = new Audio('/final_jeopardy_music.mp3');
+
+    // Cleanup on unmount
+    return () => {
+      if (fjClueAudioRef.current) {
+        fjClueAudioRef.current.pause();
+        fjClueAudioRef.current = null;
+      }
+      if (fjMusicAudioRef.current) {
+        fjMusicAudioRef.current.pause();
+        fjMusicAudioRef.current = null;
+      }
+    };
+  }, []);
 
   // Load game and episode data
   useEffect(() => {
@@ -217,6 +240,9 @@ export function BoardView() {
         if (message.scores) {
           setScores(convertScores(message.scores));
         }
+        if (message.current_player !== undefined) {
+          setCurrentPlayer(message.current_player);
+        }
         break;
 
       case 'clue_revealed':
@@ -238,6 +264,9 @@ export function BoardView() {
 
       case 'answer_judged':
         // Could show visual feedback here (green/red flash, etc.)
+        if (message.current_player !== undefined) {
+          setCurrentPlayer(message.current_player);
+        }
         break;
 
       case 'buzzer_enabled':
@@ -390,12 +419,36 @@ export function BoardView() {
         };
         setSelectedClue(fjClue);
         setFjShowClue(true);
+        // Play FJ clue sound
+        if (fjClueAudioRef.current) {
+          fjClueAudioRef.current.currentTime = 0;
+          fjClueAudioRef.current.play().catch(err =>
+            console.error('[BoardView] Failed to play FJ clue sound:', err)
+          );
+        }
+        // Don't start timer yet - wait for host to click "Finished Reading"
+        break;
+
+      case 'fj_timer_started':
+        console.log('[BoardView] Final Jeopardy timer started');
         setFjTimeRemaining(message.timer_duration);
+        // Play FJ music
+        if (fjMusicAudioRef.current) {
+          fjMusicAudioRef.current.currentTime = 0;
+          fjMusicAudioRef.current.play().catch(err =>
+            console.error('[BoardView] Failed to play FJ music:', err)
+          );
+        }
         // Start countdown timer
         const fjTimerInterval = setInterval(() => {
           setFjTimeRemaining(prev => {
             if (prev === null || prev <= 1) {
               clearInterval(fjTimerInterval);
+              // Stop music when timer expires
+              if (fjMusicAudioRef.current) {
+                fjMusicAudioRef.current.pause();
+                fjMusicAudioRef.current.currentTime = 0;
+              }
               return 0;
             }
             return prev - 1;
@@ -409,6 +462,43 @@ export function BoardView() {
           ...prev,
           [message.player_number]: message.new_score
         }));
+        break;
+
+      case 'round_changed':
+        console.log('[BoardView] Round changed broadcast received:', message.round);
+        setCurrentRound(message.round);
+        setRevealedClues(message.revealed_clues);
+        setSelectedClue(null);
+        setActiveClueId(null);
+        setBuzzerEnabled(false);
+        setShowAnswer(false);
+        // Clear DD state
+        setIsDailyDouble(false);
+        setDdPlayerName('');
+        setDdWager(null);
+        setShowDDAnimation(false);
+        // Clear FJ state if not switching to final
+        if (message.round !== 'final') {
+          setIsFinalJeopardy(false);
+          setFjCategory(null);
+          setFjShowClue(false);
+          setFjTimeRemaining(null);
+        }
+        // Update current player (especially important for Double Jeopardy start)
+        if (message.current_player !== undefined) {
+          setCurrentPlayer(message.current_player);
+        }
+        console.log('[BoardView] Round updated to:', message.round);
+        break;
+
+      case 'game_completed':
+        console.log('[BoardView] Game completed');
+        // Could show a completion overlay or message
+        break;
+
+      case 'game_abandoned':
+        console.log('[BoardView] Game abandoned');
+        // Could show an abandonment message
         break;
 
       case 'error':
@@ -446,7 +536,7 @@ export function BoardView() {
           </div>
         )}
 
-        <ScoreDisplay scores={scores} playerNames={playerNames} />
+        <ScoreDisplay scores={scores} playerNames={playerNames} currentPlayer={currentPlayer} />
       </div>
 
       {/* Daily Double Animation - Full screen image with sound */}

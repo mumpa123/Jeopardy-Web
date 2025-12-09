@@ -4,6 +4,7 @@
  */
 
 import type { IncomingMessage, OutgoingMessage } from '../types/WebSocket';
+import { WS_BASE_URL } from '../config';
 
 export type MessageHandler = (message: IncomingMessage) => void;
 
@@ -24,7 +25,7 @@ export class GameWebSocket {
    */
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
-      const wsUrl = `ws://192.168.1.16:8000/ws/game/${this.gameId}/`;
+      const wsUrl = `${WS_BASE_URL}/game/${this.gameId}/`;
 
       console.log('Connecting to WebSocket:', wsUrl);
       this.ws = new WebSocket(wsUrl);

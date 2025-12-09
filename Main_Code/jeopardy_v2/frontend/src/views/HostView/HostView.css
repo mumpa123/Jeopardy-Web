@@ -41,6 +41,12 @@
   justify-content: center;
 }
 
+/* Ensure player names are visible in HostView */
+.host-view .player-name {
+  color: #2c3e50 !important;
+  font-weight: 600;
+}
+
 .host-right {
   display: flex;
   flex-direction: column;
@@ -106,7 +112,7 @@
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .toggle-score-adjustments {

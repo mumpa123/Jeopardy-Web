@@ -1,0 +1,120 @@
+.game-history-item {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.game-history-item:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.game-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-active {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.status-paused {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-abandoned {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-waiting {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+.game-date {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.game-duration {
+  font-size: 0.9rem;
+  color: #666;
+  margin-left: auto;
+}
+
+.game-scores {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: #f9f9f9;
+  border-radius: 6px;
+}
+
+.game-id {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #eee;
+}
+
+.game-id-label {
+  font-weight: 500;
+}
+
+.game-id-value {
+  font-family: 'Courier New', monospace;
+  background: #f0f0f0;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+}
+
+@media (max-width: 768px) {
+  .game-history-item {
+    padding: 0.75rem;
+  }
+
+  .game-header {
+    gap: 0.5rem;
+  }
+
+  .status-badge {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+  }
+
+  .game-date,
+  .game-duration {
+    font-size: 0.8rem;
+  }
+
+  .game-duration {
+    margin-left: 0;
+    width: 100%;
+  }
+}

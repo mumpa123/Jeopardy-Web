@@ -1,5 +1,5 @@
 import type { Clue } from '../../types/Episode';
-import { formatCurrency, getClueValue } from '../../utils/formatters';
+import { formatCurrency, getClueValue, cleanClueText } from '../../utils/formatters';
 import './ClueDetail.css';
 
 interface ClueDetailProps {
@@ -49,7 +49,7 @@ export function ClueDetail({
 
       <div className="clue-question">
         <h4>Question:</h4>
-        <p>{clue.question}</p>
+        <p dangerouslySetInnerHTML={{ __html: cleanClueText(clue.question) }} />
       </div>
 
       {/* Finished Reading Button - Show when buzzer not enabled */}
@@ -102,7 +102,7 @@ export function ClueDetail({
         {showAnswer && (
           <div className="clue-answer">
             <h4>Answer:</h4>
-            <p>{clue.answer}</p>
+            <p dangerouslySetInnerHTML={{ __html: cleanClueText(clue.answer) }} />
           </div>
         )}
       </div>

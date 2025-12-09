@@ -31,3 +31,33 @@ export interface EpisodeListItem {
   air_date: string;
   total_clues: number;
 }
+
+export interface Season {
+  season_number: number;
+  episode_count: number;
+  total_games_played: number;
+}
+
+export interface EpisodeWithHistory extends EpisodeListItem {
+  games_played: number;
+  last_played: string | null;
+}
+
+export interface RankedScore {
+  player_number: number;
+  player_name: string;
+  player_id: number;
+  score: number;
+  rank: number;
+}
+
+export interface GameResult {
+  game_id: string;
+  episode: number;
+  episode_display: string;
+  status: 'waiting' | 'active' | 'paused' | 'completed' | 'abandoned';
+  created_at: string;
+  started_at: string | null;
+  ended_at: string | null;
+  ranked_scores: RankedScore[];
+}

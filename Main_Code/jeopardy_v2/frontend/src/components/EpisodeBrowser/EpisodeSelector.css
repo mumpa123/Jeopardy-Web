@@ -1,0 +1,102 @@
+.episode-selector {
+  padding: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.episode-selector.loading,
+.episode-selector.error,
+.episode-selector.empty {
+  text-align: center;
+  padding: 3rem;
+}
+
+.episode-selector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.back-button {
+  padding: 0.5rem 1rem;
+  background: #f5f5f5;
+  color: #333;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.back-button:hover {
+  background: #e8e8e8;
+  border-color: #999;
+}
+
+.episode-selector-title {
+  flex: 1;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #0066cc;
+  margin: 0;
+  text-align: center;
+}
+
+.episode-count {
+  padding: 0.5rem 1rem;
+  background: #e6f2ff;
+  color: #0066cc;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.episodes-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.retry-button {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.retry-button:hover {
+  background: #0052a3;
+}
+
+@media (max-width: 768px) {
+  .episode-selector {
+    padding: 1rem;
+  }
+
+  .episode-selector-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .back-button {
+    align-self: flex-start;
+  }
+
+  .episode-selector-title {
+    font-size: 1.5rem;
+    text-align: left;
+  }
+
+  .episode-count {
+    align-self: flex-start;
+  }
+}

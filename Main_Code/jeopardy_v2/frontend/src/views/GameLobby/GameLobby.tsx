@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '../../components/Header/Header';
+import { SeasonSelector } from '../../components/EpisodeBrowser/SeasonSelector';
+import { EpisodeSelector } from '../../components/EpisodeBrowser/EpisodeSelector';
 import { api } from '../../services/api';
 import type { Game, Episode } from '../../types/Game';
 import './GameLobby.css';
@@ -12,8 +14,8 @@ export function GameLobby() {
   const [createdGame, setCreatedGame] = useState<Game | null>(null);
   const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null);
   const [hostName, setHostName] = useState('');
-  const [showEpisodeSelector, setShowEpisodeSelector] = useState(false);
-  const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const [showSeasonSelector, setShowSeasonSelector] = useState(false);
+  const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
 
   const handleCreateRandomGame = async () => {
     setLoading(true);
@@ -43,31 +45,31 @@ export function GameLobby() {
     }
   };
 
-  const handleLoadEpisodes = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const episodeList = await api.episodes.list();
-      setEpisodes(episodeList);
-      setShowEpisodeSelector(true);
-    } catch (err) {
-      console.error('Failed to load episodes:', err);
-      setError('Failed to load episodes. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+  const handleShowSeasonSelector = () => {
+    setShowSeasonSelector(true);
+    setSelectedSeason(null);
   };
 
-  const handleSelectEpisode = async (episode: Episode) => {
+  const handleSelectSeason = (seasonNumber: number) => {
+    setSelectedSeason(seasonNumber);
+  };
+
+  const handleBackToSeasons = () => {
+    setSelectedSeason(null);
+  };
+
+  const handleSelectEpisode = async (episodeId: number) => {
     setLoading(true);
     setError(null);
-    setSelectedEpisode(episode);
 
     try {
+      // Fetch the full episode data
+      const episode = await api.episodes.get(episodeId);
+      setSelectedEpisode(episode);
+
       // Create the game with selected episode
       const game = await api.games.create({
-        episode: episode.id,
+        episode: episodeId,
         settings: {
           buzzer_window_ms: 5000,
           daily_double_wager_time_ms: 30000,
@@ -76,7 +78,8 @@ export function GameLobby() {
       });
 
       setCreatedGame(game);
-      setShowEpisodeSelector(false);
+      setShowSeasonSelector(false);
+      setSelectedSeason(null);
     } catch (err) {
       console.error('Failed to create game:', err);
       setError('Failed to create game. Please try again.');
@@ -113,7 +116,7 @@ export function GameLobby() {
       <Header title="Game Lobby" subtitle="Create or join a Jeopardy game" />
 
       <div className="lobby-content">
-        {!createdGame && !showEpisodeSelector && (
+        {!createdGame && !showSeasonSelector && (
           <div className="create-game-section">
             <h2>Create New Game</h2>
 
@@ -128,10 +131,10 @@ export function GameLobby() {
 
               <button
                 className="create-button choose"
-                onClick={handleLoadEpisodes}
+                onClick={handleShowSeasonSelector}
                 disabled={loading}
               >
-                {loading ? 'Loading...' : 'Choose Specific Episode'}
+                Choose Specific Episode
               </button>
             </div>
 
@@ -139,30 +142,16 @@ export function GameLobby() {
           </div>
         )}
 
-        {showEpisodeSelector && episodes.length > 0 && (
-          <div className="episode-selector">
-            <h2>Select an Episode</h2>
-            <button
-              className="back-button"
-              onClick={() => setShowEpisodeSelector(false)}
-            >
-              ← Back
-            </button>
+        {showSeasonSelector && !selectedSeason && (
+          <SeasonSelector onSelectSeason={handleSelectSeason} />
+        )}
 
-            <div className="episode-list">
-              {episodes.map(episode => (
-                <div
-                  key={episode.id}
-                  className="episode-item"
-                  onClick={() => handleSelectEpisode(episode)}
-                >
-                  <h3>Season {episode.season_number} - Episode {episode.episode_number}</h3>
-                  <p>Air Date: {episode.air_date}</p>
-                  <p>Total Clues: {episode.total_clues}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+        {showSeasonSelector && selectedSeason && (
+          <EpisodeSelector
+            seasonNumber={selectedSeason}
+            onSelectEpisode={handleSelectEpisode}
+            onBack={handleBackToSeasons}
+          />
         )}
 
         {createdGame && (
@@ -283,6 +272,8 @@ export function GameLobby() {
               onClick={() => {
                 setCreatedGame(null);
                 setSelectedEpisode(null);
+                setShowSeasonSelector(false);
+                setSelectedSeason(null);
                 setError(null);
               }}
             >

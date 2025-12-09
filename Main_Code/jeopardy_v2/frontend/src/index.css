@@ -17,3 +17,16 @@ body {
 #root {
   min-height: 100vh;
 }
+
+/* Text formatting utilities for clue content */
+.underline {
+  text-decoration: underline;
+}
+
+.italic {
+  font-style: italic;
+}
+
+.bold {
+  font-weight: bold;
+}

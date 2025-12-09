@@ -199,6 +199,47 @@ class Game(models.Model):
     def __str__(self):
         return f"Game {self.game_id} ({self.status})"
 
+    @property
+    def is_completed(self):
+        """Check if game finished normally"""
+        return self.status == 'completed'
+
+    def get_winner(self):
+        """
+        Get the winning player (highest score).
+        Returns GameParticipant or None if no participants.
+        """
+        participants = self.gameparticipant_set.all().order_by('-score')
+        return participants.first() if participants.exists() else None
+
+    def get_ranked_scores(self):
+        """
+        Get all participants ranked by score (highest to lowest).
+        Returns list of dicts with player info and ranking.
+        """
+        participants = self.gameparticipant_set.select_related('player').order_by('-score')
+
+        ranked = []
+        current_rank = 1
+        prev_score = None
+
+        for i, participant in enumerate(participants, 1):
+            # Handle ties - same score gets same rank
+            if prev_score is not None and participant.score != prev_score:
+                current_rank = i
+
+            ranked.append({
+                'player_number': participant.player_number,
+                'player_name': participant.player.display_name,
+                'player_id': participant.player.id,
+                'score': participant.score,
+                'rank': current_rank
+            })
+
+            prev_score = participant.score
+
+        return ranked
+
 class GameParticipant(models.Model):
     """
     Links a player to a Game.

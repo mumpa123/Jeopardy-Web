@@ -1,6 +1,6 @@
 import type { Category, Clue } from '../../types/Episode';
 import { ClueCard } from './ClueCard';
-import { getClueValue } from '../../utils/formatters';
+import { getClueValue, cleanClueText } from '../../utils/formatters';
 import './Board.css';
 
 interface BoardProps {
@@ -40,15 +40,17 @@ export function Board({
     <div className="board-container">
       {/* Category headers */}
       <div className="category-row">
-        {sortedCategories.map(category => (
-          <div
-            key={category.id}
-            className="category-header"
-            style={{ fontSize: getCategoryFontSize(category.name) }}
-          >
-            {category.name}
-          </div>
-        ))}
+        {sortedCategories.map(category => {
+          const cleanedName = cleanClueText(category.name);
+          return (
+            <div
+              key={category.id}
+              className="category-header"
+              style={{ fontSize: getCategoryFontSize(cleanedName) }}
+              dangerouslySetInnerHTML={{ __html: cleanedName }}
+            />
+          );
+        })}
       </div>
 
       {/* Clue grid - 5 rows */}

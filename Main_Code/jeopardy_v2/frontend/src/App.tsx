@@ -4,6 +4,7 @@ import { PlayerView } from './views/PlayerView/PlayerView';
 import { HostView } from './views/HostView/HostView';
 import { BoardView } from './views/BoardView/BoardView';
 import { GameLobby } from './views/GameLobby/GameLobby';
+import { GameBrowser } from './views/GameBrowser/GameBrowser';
 
 function Home() {
   return (
@@ -37,6 +38,24 @@ function Home() {
           }}
         >
           🎮 CREATE NEW GAME
+        </Link>
+        <Link
+          to="/browse"
+          style={{
+            fontSize: '1.5rem',
+            padding: '1.5rem 2rem',
+            background: 'linear-gradient(135deg, #27ae60, #229954)',
+            color: 'white',
+            textDecoration: 'none',
+            borderRadius: '8px',
+            border: '3px solid black',
+            fontWeight: 'bold',
+            width: '100%',
+            display: 'block',
+            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)'
+          }}
+        >
+          🔍 BROWSE GAMES
         </Link>
         <Link
           to="/test"
@@ -116,9 +135,11 @@ function App() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/lobby" element={<GameLobby />} />
+      <Route path="/browse" element={<GameBrowser />} />
       <Route path="/test" element={<TestView />} />
       <Route path="/host/:gameId" element={<HostView />} />
       <Route path="/player/:gameId/:playerName/:playerNumber" element={<PlayerView />} />
+      <Route path="/player/:gameId" element={<PlayerView />} />
       <Route path="/board/:gameId" element={<BoardView />} />
     </Routes>
   );

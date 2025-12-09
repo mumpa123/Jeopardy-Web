@@ -67,6 +67,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         state = await database_sync_to_async(self.engine.get_state)()
         scores = await database_sync_to_async(self.engine.get_scores)()
         participants = await self.get_participants()
+        current_player = await database_sync_to_async(self.engine.get_current_player)()
 
         # Convert integer keys to strings for JSON serialization
         scores_str = {str(k): v for k, v in scores.items()}
@@ -79,7 +80,8 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             'game_id': self.game_id,
             'state': state,
             'scores': scores_str,
-            'players': players_dict
+            'players': players_dict,
+            'current_player': current_player
         })
 
     async def disconnect(self, close_code):
@@ -109,6 +111,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
                 'next_clue': self.handle_next_clue,
                 'reset_game': self.handle_reset_game,
                 'adjust_score': self.handle_adjust_score,
+                'start_round': self.handle_start_round,
                 'reveal_daily_double': self.handle_reveal_daily_double,
                 'submit_wager': self.handle_submit_wager,
                 'show_dd_clue': self.handle_show_dd_clue,
@@ -117,6 +120,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
                 'start_final_jeopardy': self.handle_start_final_jeopardy,
                 'submit_fj_wager': self.handle_submit_fj_wager,
                 'reveal_fj_clue': self.handle_reveal_fj_clue,
+                'start_fj_timer': self.handle_start_fj_timer,
                 'submit_fj_answer': self.handle_submit_fj_answer,
                 'judge_fj_answer': self.handle_judge_fj_answer,
         }
@@ -144,11 +148,13 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         """
         player_number = content.get('player_number')
         client_timestamp = content.get('timestamp', 0)
+        unlock_token = content.get('unlock_token')  # Token received from buzzer_enabled broadcast
 
-        # Process buzz through game engine
+        # Process buzz through game engine with unlock token validation
         result = await database_sync_to_async(self.engine.handle_buzz)(
                 player_number,
-                client_timestamp
+                client_timestamp,
+                unlock_token
         )
 
         # Log to database
@@ -157,16 +163,26 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             'result': result
         })
 
+        # Get player name
+        participants = await self.get_participants()
+        player_name = next(
+            (p['player_name'] for p in participants if p['player_number'] == player_number),
+            f"Player {player_number}"
+        )
+
         # Broadcast result to all clients
         await self.channel_layer.group_send(
                 self.room_group_name,
                 {
                     'type': 'buzz_result',
                     'player_number': player_number,
+                    'player_name': player_name,
                     'accepted': result['accepted'],
                     'winner': result['winner'],
                     'position': result['position'],
-                    'server_timestamp': result['server_timestamp_us']
+                    'server_timestamp': result['server_timestamp_us'],
+                    'cooldown': result.get('cooldown', False),
+                    'cooldown_remaining': result.get('cooldown_remaining', 0.0)
                 }
             )
 
@@ -228,19 +244,20 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         """
         Handle host enabling the buzzer after finishing reading the clue.
         """
-        # Unlock buzzer
-        await database_sync_to_async(self.engine.unlock_buzzer)()
+        # Unlock buzzer and get the unlock token
+        unlock_token = await database_sync_to_async(self.engine.unlock_buzzer)()
 
         # Get current clue ID from state
         state = await database_sync_to_async(self.engine.get_state)()
         clue_id = state.get('current_clue')
 
-        # Broadcast buzzer enabled to all clients
+        # Broadcast buzzer enabled to all clients with unlock token
         await self.channel_layer.group_send(
                 self.room_group_name,
                 {
                     'type': 'buzzer_enabled',
-                    'clue_id': int(clue_id) if clue_id else 0
+                    'clue_id': int(clue_id) if clue_id else 0,
+                    'unlock_token': unlock_token
                 }
             )
 
@@ -252,15 +269,21 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         correct = content.get('correct')
         value = content.get('value')
 
-        # Update score
+        # Update score in Redis
         delta = value if correct else -value
         new_score = await database_sync_to_async(
                 self.engine.update_score
         )(player_number, delta)
 
+        # Persist to database immediately
+        await self.update_participant_score(player_number, new_score)
+
         # If answer is correct, set this player as current player (for Daily Doubles)
         if correct:
             await database_sync_to_async(self.engine.set_current_player)(player_number)
+
+        # Get current player to send to frontend
+        current_player = await database_sync_to_async(self.engine.get_current_player)()
 
         # Log action
         await self.log_action('judge_answer', {
@@ -278,7 +301,8 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
                     'player_number': player_number,
                     'correct': correct,
                     'value': value,
-                    'new_score': new_score
+                    'new_score': new_score,
+                    'current_player': current_player
                 }
             )
 
@@ -333,6 +357,10 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         # Reset game state in Redis
         reset_scores = await database_sync_to_async(self.engine.reset_game)()
 
+        # Reset scores in database as well
+        for player_number, score in reset_scores.items():
+            await self.update_participant_score(player_number, score)
+
         # Get player names from database
         participants = await self.get_participants()
         players_dict = {str(p['player_number']): p['player_name'] for p in participants}
@@ -371,6 +399,9 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             self.engine.update_score
         )(player_number, adjustment)
 
+        # Persist to database immediately
+        await self.update_participant_score(player_number, new_score)
+
         # Log action
         await self.log_action('adjust_score', {
             'player_number': player_number,
@@ -390,6 +421,59 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         )
 
         print(f"[handle_adjust_score] Broadcast sent - new score: {new_score}")
+
+    async def handle_start_round(self, content):
+        """
+        Handle host starting a new round (single, double, or final).
+        Updates game state and broadcasts to all clients.
+        """
+        round_type = content.get('round')
+
+        print(f"[handle_start_round] Starting round: {round_type}")
+
+        # Update game state in Redis
+        await database_sync_to_async(self.engine.update_state)({
+            'current_round': round_type
+        })
+
+        # Clear revealed clues when switching rounds
+        state = await database_sync_to_async(self.engine.get_state)()
+        revealed_clues = []
+
+        # Update revealed clues to empty list
+        await database_sync_to_async(self.engine.update_state)({
+            'revealed_clues': revealed_clues
+        })
+
+        # When starting Double Jeopardy, give control to the lowest-scoring player
+        if round_type == 'double':
+            scores = await database_sync_to_async(self.engine.get_scores)()
+            if scores:
+                # Find player with lowest score
+                lowest_player = min(scores.items(), key=lambda x: x[1])[0]
+                await database_sync_to_async(self.engine.set_current_player)(lowest_player)
+                print(f"[handle_start_round] Set player {lowest_player} (lowest scorer) as current player for Double Jeopardy")
+
+        # Get current player to send to frontend
+        current_player = await database_sync_to_async(self.engine.get_current_player)()
+
+        # Log action
+        await self.log_action('start_round', {
+            'round': round_type
+        })
+
+        # Broadcast round change to all clients
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'round_changed',
+                'round': round_type,
+                'revealed_clues': revealed_clues,
+                'current_player': current_player
+            }
+        )
+
+        print(f"[handle_start_round] Round changed to {round_type}, broadcast sent")
 
     async def handle_reveal_daily_double(self, content):
         """
@@ -563,11 +647,14 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         dd_state = await database_sync_to_async(self.engine.get_dd_state)()
         wager = dd_state.get('wager', 0)
 
-        # Update score (+/- wager amount)
+        # Update score in Redis (+/- wager amount)
         delta = wager if correct else -wager
         new_score = await database_sync_to_async(
             self.engine.update_score
         )(player_number, delta)
+
+        # Persist to database immediately
+        await self.update_participant_score(player_number, new_score)
 
         # If correct, set this player as current player
         if correct:
@@ -638,6 +725,12 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         print(f"[score_adjusted] Received broadcast event: {event}")
         await self.send_json(event)
         print(f"[score_adjusted] Sent to WebSocket client")
+
+    async def round_changed(self, event):
+        """Receive round changed broadcast."""
+        print(f"[round_changed] Received broadcast event: {event}")
+        await self.send_json(event)
+        print(f"[round_changed] Sent to WebSocket client")
 
     async def daily_double_detected(self, event):
         """Receive daily double detected broadcast."""
@@ -770,7 +863,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
     async def handle_reveal_fj_clue(self, content):
         """
         Handle host revealing Final Jeopardy clue.
-        Starts the 30-second timer.
+        Shows the clue but does NOT start the timer yet.
         """
         print(f"[handle_reveal_fj_clue] Revealing FJ clue")
 
@@ -785,21 +878,43 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             print(f"[handle_reveal_fj_clue] ERROR: No clue data found")
             return
 
-        # Update FJ state
-        fj_state['stage'] = 'clue_shown'
+        # Update FJ state (clue revealed, waiting for timer)
+        fj_state['stage'] = 'clue_revealed'
         await database_sync_to_async(self.engine.set_fj_state)(fj_state)
 
-        # Broadcast clue with timer start
+        # Broadcast clue (WITHOUT timer start)
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'fj_clue_revealed',
-                'clue': clue_data,
+                'clue': clue_data
+            }
+        )
+
+        print(f"[handle_reveal_fj_clue] Clue revealed, waiting for host to start timer")
+
+    async def handle_start_fj_timer(self, content):
+        """
+        Handle host starting Final Jeopardy timer after reading the clue.
+        This starts the 30-second timer and plays the music.
+        """
+        print(f"[handle_start_fj_timer] Starting FJ timer")
+
+        # Update FJ state
+        fj_state = await database_sync_to_async(self.engine.get_fj_state)()
+        fj_state['stage'] = 'timer_running'
+        await database_sync_to_async(self.engine.set_fj_state)(fj_state)
+
+        # Broadcast timer start
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'fj_timer_started',
                 'timer_duration': 30  # 30 seconds
             }
         )
 
-        print(f"[handle_reveal_fj_clue] Clue revealed, timer started")
+        print(f"[handle_start_fj_timer] Timer started, music should be playing")
 
     async def handle_submit_fj_answer(self, content):
         """
@@ -840,8 +955,11 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         # Calculate score change
         score_change = wager if correct else -wager
 
-        # Update score
+        # Update score in Redis
         new_score = await database_sync_to_async(self.engine.update_score)(player_number, score_change)
+
+        # Persist to database immediately
+        await self.update_participant_score(player_number, new_score)
 
         # Mark as judged
         await database_sync_to_async(self.engine.set_fj_judged)(player_number, correct)
@@ -859,6 +977,96 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         )
 
         print(f"[handle_judge_fj_answer] Judgment broadcast - new score: {new_score}")
+
+        # Check if all players have been judged - if so, auto-complete the game
+        await self.check_and_complete_game()
+
+    async def handle_end_game(self, content):
+        """
+        Manually end the game (host control).
+        Sets status to 'completed' and broadcasts game_completed event.
+        """
+        from django.utils import timezone
+
+        print(f"[handle_end_game] Host manually ending game")
+
+        # Get the game
+        game = await database_sync_to_async(
+            Game.objects.select_related('episode').get
+        )(game_id=self.game_id)
+
+        # Check if already completed
+        if game.status == 'completed':
+            print(f"[handle_end_game] Game already completed")
+            return
+
+        # Get final scores from Redis and save to database
+        scores = await database_sync_to_async(self.engine.get_scores)()
+        print(f"[handle_end_game] Final scores from Redis: {scores}")
+        await self.save_final_scores_to_db(scores)
+
+        # Update game status to completed
+        game.status = 'completed'
+        game.ended_at = timezone.now()
+        await database_sync_to_async(game.save)()
+
+        # Broadcast game completed
+        # Convert integer keys to strings for MessagePack compatibility
+        final_scores = {str(k): v for k, v in scores.items()}
+
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'game_completed',
+                'final_scores': final_scores,
+                'reason': 'manual_end'
+            }
+        )
+
+        print(f"[handle_end_game] Game manually ended and marked as completed")
+
+    async def handle_abandon_game(self, content):
+        """
+        Abandon the game (host control).
+        Sets status to 'abandoned' and broadcasts game_abandoned event.
+        """
+        from django.utils import timezone
+
+        print(f"[handle_abandon_game] Host abandoning game")
+
+        # Get the game
+        game = await database_sync_to_async(
+            Game.objects.select_related('episode').get
+        )(game_id=self.game_id)
+
+        # Check if already completed or abandoned
+        if game.status in ['completed', 'abandoned']:
+            print(f"[handle_abandon_game] Game already {game.status}")
+            return
+
+        # Get final scores from Redis and save to database
+        scores = await database_sync_to_async(self.engine.get_scores)()
+        print(f"[handle_abandon_game] Final scores from Redis: {scores}")
+        await self.save_final_scores_to_db(scores)
+
+        # Update game status to abandoned
+        game.status = 'abandoned'
+        game.ended_at = timezone.now()
+        await database_sync_to_async(game.save)()
+
+        # Broadcast game abandoned
+        # Convert integer keys to strings for MessagePack compatibility
+        final_scores = {str(k): v for k, v in scores.items()}
+
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'game_abandoned',
+                'final_scores': final_scores
+            }
+        )
+
+        print(f"[handle_abandon_game] Game abandoned")
 
     # Broadcast receivers for Final Jeopardy
 
@@ -880,6 +1088,12 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json(event)
         print(f"[fj_clue_revealed] Sent to WebSocket client")
 
+    async def fj_timer_started(self, event):
+        """Receive FJ timer started broadcast."""
+        print(f"[fj_timer_started] Received broadcast event: {event}")
+        await self.send_json(event)
+        print(f"[fj_timer_started] Sent to WebSocket client")
+
     async def fj_answer_submitted(self, event):
         """Receive FJ answer submitted broadcast."""
         print(f"[fj_answer_submitted] Received broadcast event: {event}")
@@ -892,7 +1106,112 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json(event)
         print(f"[fj_answer_judged] Sent to WebSocket client")
 
+    async def game_completed(self, event):
+        """Receive game completed broadcast."""
+        print(f"[game_completed] Game has been completed")
+        await self.send_json(event)
+
+    async def game_abandoned(self, event):
+        """Receive game abandoned broadcast."""
+        print(f"[game_abandoned] Game has been abandoned")
+        await self.send_json(event)
+
     # Helper methods
+
+    async def check_and_complete_game(self):
+        """
+        Check if all Final Jeopardy answers have been judged.
+        If so, automatically complete the game.
+        """
+        from django.utils import timezone
+
+        # Get all participants
+        participants = await self.get_participants()
+        total_players = len(participants)
+
+        if total_players == 0:
+            return  # No players, don't complete
+
+        # Get all judged results
+        judged_results = await database_sync_to_async(self.engine.get_all_fj_judged)()
+        judged_count = len(judged_results)
+
+        print(f"[check_and_complete_game] {judged_count}/{total_players} players judged")
+
+        # If all players have been judged, complete the game
+        if judged_count >= total_players:
+            print(f"[check_and_complete_game] All players judged - completing game")
+
+            # Get final scores from Redis
+            scores = await database_sync_to_async(self.engine.get_scores)()
+            print(f"[check_and_complete_game] Final scores from Redis: {scores}")
+
+            # Save scores to database
+            await self.save_final_scores_to_db(scores)
+
+            # Update game status to completed
+            game = await database_sync_to_async(
+                Game.objects.select_related('episode').get
+            )(game_id=self.game_id)
+
+            game.status = 'completed'
+            game.ended_at = timezone.now()
+            await database_sync_to_async(game.save)()
+
+            # Broadcast game completed
+            # Convert integer keys to strings for MessagePack compatibility
+            final_scores = {str(k): v for k, v in scores.items()}
+
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'game_completed',
+                    'final_scores': final_scores
+                }
+            )
+
+            print(f"[check_and_complete_game] Game marked as completed")
+
+    @database_sync_to_async
+    def update_participant_score(self, player_number, score):
+        """
+        Update a single participant's score in the database.
+
+        Args:
+            player_number: Player number (1, 2, 3, etc.)
+            score: New score value
+        """
+        try:
+            participant = GameParticipant.objects.get(
+                game__game_id=self.game_id,
+                player_number=player_number
+            )
+            participant.score = score
+            participant.save()
+            print(f"[update_participant_score] Updated player {player_number} score to {score} in database")
+        except GameParticipant.DoesNotExist:
+            print(f"[update_participant_score] WARNING: No participant found for player {player_number}")
+
+    @database_sync_to_async
+    def save_final_scores_to_db(self, scores):
+        """
+        Save final scores from Redis to GameParticipant records in database.
+        Args:
+            scores: dict mapping player_number (int) to score (int)
+        """
+        print(f"[save_final_scores_to_db] Saving scores to database: {scores}")
+
+        for player_number, score in scores.items():
+            try:
+                participant = GameParticipant.objects.get(
+                    game__game_id=self.game_id,
+                    player_number=player_number
+                )
+                participant.score = score
+                participant.save()
+                print(f"[save_final_scores_to_db] Updated player {player_number} score to {score}")
+            except GameParticipant.DoesNotExist:
+                print(f"[save_final_scores_to_db] WARNING: No participant found for player {player_number}")
 
     @database_sync_to_async
     def get_game_data(self):

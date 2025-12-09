@@ -34,7 +34,7 @@ SECRET_KEY = 'django-insecure-+x8l2*=__@^o&_7+ggq5nh4_43p_@(+o&y=^6)re+a6q+y9nz4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '192.168.1.16']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '192.168.1.16', '172.20.10.4', '192.168.1.34', '192.168.1.29']
 
 
 # Application definition
@@ -173,11 +173,16 @@ REST_FRAMEWORK = {
 
 # CORS Configuration
 # Allow frontend (Vite dev server) to access backend API
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'http://192.168.1.16:5173',
-]
+if DEBUG:
+    # In development, allow CORS from any origin
+    # This enables the app to work on any network without reconfiguration
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    # In production, specify exact allowed origins
+    CORS_ALLOWED_ORIGINS = [
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+    ]
 
 # Allow cookies/credentials to be sent with requests
 CORS_ALLOW_CREDENTIALS = True

@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django.shortcuts import get_object_or_404
+from django.db.models import Count, Max, Q
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
@@ -13,7 +14,8 @@ from users.models import Player
 from .serializers import (
         EpisodeSerializer, EpisodeListSerializer, CategorySerializer,
         ClueSerializer, GameSerializer, GameCreateSerializer,
-        PlayerSerializer, GameParticipantSerializer
+        PlayerSerializer, GameParticipantSerializer,
+        SeasonSerializer, EpisodeWithHistorySerializer, GameResultSerializer
 )
 
 
@@ -81,6 +83,80 @@ class EpisodeViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(episode)
         return Response(serializer.data)
 
+    @action(detail=False, methods=['get'])
+    def seasons(self, request):
+        """
+        Custom endpoint: /api/episodes/seasons/
+
+        Get list of all seasons with episode counts and total games played.
+        """
+        # Aggregate data by season
+        seasons_data = Episode.objects.values('season_number').annotate(
+            episode_count=Count('id')
+        ).order_by('season_number')
+
+        # Add game counts for each season
+        result = []
+        for season_data in seasons_data:
+            season_num = season_data['season_number']
+
+            # Count total games for this season
+            total_games = Game.objects.filter(
+                episode__season_number=season_num
+            ).count()
+
+            result.append({
+                'season_number': season_num,
+                'episode_count': season_data['episode_count'],
+                'total_games_played': total_games
+            })
+
+        serializer = SeasonSerializer(result, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='by_season/(?P<season_number>[0-9]+)')
+    def by_season(self, request, season_number=None):
+        """
+        Custom endpoint: /api/episodes/by_season/{season_number}/
+
+        Get all episodes for a specific season with game history summary.
+        """
+        # Get episodes for this season
+        episodes = Episode.objects.filter(
+            season_number=season_number
+        ).annotate(
+            games_played=Count('game'),
+            last_played=Max('game__created_at')
+        ).order_by('episode_number')
+
+        if not episodes.exists():
+            return Response(
+                {'error': f'No episodes found for season {season_number}'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = EpisodeWithHistorySerializer(episodes, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def games(self, request, pk=None):
+        """
+        Custom endpoint: /api/episodes/{id}/games/
+
+        Get all games played for a specific episode with full results.
+        """
+        episode = self.get_object()
+
+        # Get all games for this episode, ordered by most recent first
+        games = Game.objects.filter(
+            episode=episode
+        ).prefetch_related(
+            'gameparticipant_set__player'
+        ).order_by('-created_at')
+
+        serializer = GameResultSerializer(games, many=True)
+        return Response(serializer.data)
+
 
 class PlayerViewSet(viewsets.ModelViewSet):
     """
@@ -127,7 +203,7 @@ class GameViewSet(viewsets.ModelViewSet):
     ViewSet for managing games.
 
     Endpoints:
-    - GET /api/games/ - List all games
+    - GET /api/games/ - List all games (supports ?status= and ?ordering= filters)
     - POST /api/games/ - Create new game
     - GET /api/games/{game_id}/ - Get specific game
     - PATCH /api/games/{game_id}/ - Update game
@@ -143,6 +219,35 @@ class GameViewSet(viewsets.ModelViewSet):
         if self.action == 'create':
             return GameCreateSerializer
         return GameSerializer
+
+    def list(self, request, *args, **kwargs):
+        """
+        Override list to support filtering by status and custom ordering.
+
+        Query Parameters:
+        - status: Filter by game status (waiting, active, completed, etc.)
+        - ordering: Order by field (e.g., -created_at for newest first)
+        """
+        queryset = self.get_queryset()
+
+        # Filter by status if provided
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        # Apply ordering if provided (default: newest first)
+        ordering = request.query_params.get('ordering', '-created_at')
+        if ordering:
+            queryset = queryset.order_by(ordering)
+
+        # Paginate and serialize
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
         """
@@ -369,6 +474,56 @@ class GameViewSet(viewsets.ModelViewSet):
         from django.utils import timezone
         game.status = 'active'
         game.started_at = timezone.now()
+        game.save()
+
+        serializer = self.get_serializer(game)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def end(self, request, game_id=None):
+        """
+        Custom endpoint: /api/games/{game_id}/end/
+
+        Manually end the game (mark as completed).
+        Host control to finish the game before all judging is complete.
+        """
+        from django.utils import timezone
+        game = self.get_object()
+
+        if game.status in ['completed', 'abandoned']:
+            return Response(
+                {'error': f'Game already {game.status}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Update game status
+        game.status = 'completed'
+        game.ended_at = timezone.now()
+        game.save()
+
+        serializer = self.get_serializer(game)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def abandon(self, request, game_id=None):
+        """
+        Custom endpoint: /api/games/{game_id}/abandon/
+
+        Abandon the game (mark as abandoned).
+        Host control to cancel/abort the game.
+        """
+        from django.utils import timezone
+        game = self.get_object()
+
+        if game.status in ['completed', 'abandoned']:
+            return Response(
+                {'error': f'Game already {game.status}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Update game status
+        game.status = 'abandoned'
+        game.ended_at = timezone.now()
         game.save()
 
         serializer = self.get_serializer(game)

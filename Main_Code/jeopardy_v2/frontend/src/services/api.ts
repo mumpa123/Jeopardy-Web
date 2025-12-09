@@ -13,8 +13,8 @@ import type {
 	GameParticipant,
 	Player
 } from '../types/Game';
-
-const API_BASE_URL = 'http://192.168.1.16:8000/api';
+import type { Season, EpisodeWithHistory, GameResult } from '../types/Episode';
+import { API_BASE_URL } from '../config';
 
 // Generic fetch wrapper with error handling
 
@@ -53,8 +53,24 @@ async function apiFetch<T>(
 export const gameAPI = {
 //List all games
 
-list: async (): Promise<Game[]> => {
-       return apiFetch<Game[]>('/games/');
+list: async (filters?: { status?: string; ordering?: string }): Promise<Game[]> => {
+	const params = new URLSearchParams();
+	if (filters?.status) params.append('status', filters.status);
+	if (filters?.ordering) params.append('ordering', filters.ordering);
+
+	const queryString = params.toString();
+	const endpoint = queryString ? `/games/?${queryString}` : '/games/';
+
+	const response = await apiFetch<any>(endpoint);
+
+	// Handle paginated response from DRF
+	// If response has a 'results' field, it's paginated
+	if (response && typeof response === 'object' && 'results' in response) {
+		return response.results as Game[];
+	}
+
+	// Otherwise return as-is (backwards compatibility)
+	return response as Game[];
 },
 
 //Get specific game
@@ -115,6 +131,24 @@ validatePlayer: async (gameId: string, playerId: number): Promise<{valid: boolea
 		return { valid: false };
 	}
 },
+
+// End game manually (mark as completed)
+
+end: async (gameId: string): Promise<Game> => {
+	return apiFetch<Game>(`/games/${gameId}/end/`, {
+		method: 'POST',
+		body: JSON.stringify({}),
+	});
+},
+
+// Abandon game
+
+abandon: async (gameId: string): Promise<Game> => {
+	return apiFetch<Game>(`/games/${gameId}/abandon/`, {
+		method: 'POST',
+		body: JSON.stringify({}),
+	});
+},
 };
 
 //Player endpoints
@@ -172,6 +206,21 @@ export const episodeAPI = {
 		if (season) params.append('season', season.toString());
 		if (episode) params.append('episode', episode.toString());
 		return apiFetch<Episode[]>(`/episodes/search/?${params.toString()}`);
+	},
+
+	// Get all seasons with episode counts
+	getSeasons: async (): Promise<Season[]> => {
+		return apiFetch<Season[]>('/episodes/seasons/');
+	},
+
+	// Get episodes for a specific season with history
+	getBySeason: async (seasonNumber: number): Promise<EpisodeWithHistory[]> => {
+		return apiFetch<EpisodeWithHistory[]>(`/episodes/by_season/${seasonNumber}/`);
+	},
+
+	// Get all games for a specific episode
+	getGames: async (episodeId: number): Promise<GameResult[]> => {
+		return apiFetch<GameResult[]>(`/episodes/${episodeId}/games/`);
 	},
 };
 

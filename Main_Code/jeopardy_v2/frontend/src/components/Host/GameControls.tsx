@@ -2,9 +2,10 @@ import './GameControls.css';
 
 interface GameControlsProps {
   currentRound: 'single' | 'double' | 'final';
-  gameStatus: 'waiting' | 'active' | 'completed';
+  gameStatus: 'waiting' | 'active' | 'completed' | 'abandoned';
   onStartRound: (round: 'single' | 'double' | 'final') => void;
   onEndGame: () => void;
+  onAbandonGame: () => void;
   onResetGame?: () => void;
 }
 
@@ -13,6 +14,7 @@ export function GameControls({
   gameStatus,
   onStartRound,
   onEndGame,
+  onAbandonGame,
   onResetGame
 }: GameControlsProps) {
   return (
@@ -54,6 +56,7 @@ export function GameControls({
           <button
             className="nav-button reset-game"
             onClick={onResetGame}
+            disabled={gameStatus === 'completed' || gameStatus === 'abandoned'}
           >
             Reset Game
           </button>
@@ -61,8 +64,16 @@ export function GameControls({
         <button
           className="nav-button end-game"
           onClick={onEndGame}
+          disabled={gameStatus === 'completed' || gameStatus === 'abandoned'}
         >
           End Game
+        </button>
+        <button
+          className="nav-button abandon-game"
+          onClick={onAbandonGame}
+          disabled={gameStatus === 'completed' || gameStatus === 'abandoned'}
+        >
+          Abandon Game
         </button>
       </div>
     </div>

@@ -183,6 +183,67 @@ class GameCreateSerializer(serializers.ModelSerializer):
         fields = ['episode', 'host', 'settings']
 
 
+class SeasonSerializer(serializers.Serializer):
+    """
+    Serializer for season summary with episode and game counts.
+    Not tied to a model - aggregated data.
+    """
+    season_number = serializers.IntegerField()
+    episode_count = serializers.IntegerField()
+    total_games_played = serializers.IntegerField()
+
+
+class EpisodeWithHistorySerializer(serializers.ModelSerializer):
+    """
+    Episode serializer with game history summary.
+    Shows how many times episode was played and when.
+    """
+    total_clues = serializers.ReadOnlyField()
+    games_played = serializers.IntegerField(read_only=True)
+    last_played = serializers.DateTimeField(read_only=True, allow_null=True)
+
+    class Meta:
+        model = Episode
+        fields = [
+            'id',
+            'season_number',
+            'episode_number',
+            'air_date',
+            'total_clues',
+            'games_played',
+            'last_played'
+        ]
+
+
+class GameResultSerializer(serializers.ModelSerializer):
+    """
+    Game serializer with ranked player scores for results display.
+    """
+    ranked_scores = serializers.SerializerMethodField()
+    episode_display = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Game
+        fields = [
+            'game_id',
+            'episode',
+            'episode_display',
+            'status',
+            'created_at',
+            'started_at',
+            'ended_at',
+            'ranked_scores'
+        ]
+
+    def get_ranked_scores(self, obj):
+        """Get ranked scores from Game model method"""
+        return obj.get_ranked_scores()
+
+    def get_episode_display(self, obj):
+        """Display episode as S#E# format"""
+        return f"S{obj.episode.season_number}E{obj.episode.episode_number}"
+
+
 
 
 

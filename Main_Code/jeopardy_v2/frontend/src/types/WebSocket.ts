@@ -20,6 +20,7 @@ export interface BuzzMessage extends BaseMessage {
 	type: 'buzz';
 	player_number: number;
 	timestamp: number; // client timestamp in milliseconds
+	unlock_token?: number | null; // token received from buzzer_enabled for validation
 }
 
 export interface RevealClueMessage extends BaseMessage {
@@ -111,6 +112,23 @@ export interface JudgeFJAnswerMessage extends BaseMessage {
 	correct: boolean;
 }
 
+export interface StartRoundMessage extends BaseMessage {
+	type: 'start_round';
+	round: 'single' | 'double' | 'final';
+}
+
+export interface EndGameMessage extends BaseMessage {
+	type: 'end_game';
+}
+
+export interface AbandonGameMessage extends BaseMessage {
+	type: 'abandon_game';
+}
+
+export interface StartFJTimerMessage extends BaseMessage {
+	type: 'start_fj_timer';
+}
+
 // Incoming messages (server -> client)
 
 export interface ConnectionEstablishedMessage extends BaseMessage {
@@ -124,10 +142,13 @@ export interface ConnectionEstablishedMessage extends BaseMessage {
 export interface BuzzResultMessage extends BaseMessage {
 	type: 'buzz_result';
 	player_number: number;
+	player_name: string;
 	accepted: boolean;
 	winner: number | null;
 	position: number;
 	server_timestamp: number;
+	cooldown?: boolean; // whether this buzz was rejected due to cooldown
+	cooldown_remaining?: number; // seconds remaining in cooldown
 }
 
 export interface ClueRevealedMessage extends BaseMessage {
@@ -170,6 +191,7 @@ export interface PlayerJoinedMessage extends BaseMessage {
 export interface BuzzerEnabledMessage extends BaseMessage {
 	type: 'buzzer_enabled';
 	clue_id: number;
+	unlock_token?: number; // unique token for this unlock event
 }
 
 export interface GameResetMessage extends BaseMessage {
@@ -276,6 +298,28 @@ export interface FJAnswerJudgedMessage extends BaseMessage {
 	new_score: number;
 }
 
+export interface RoundChangedMessage extends BaseMessage {
+	type: 'round_changed';
+	round: 'single' | 'double' | 'final';
+	revealed_clues: number[];
+}
+
+export interface FJTimerStartedMessage extends BaseMessage {
+	type: 'fj_timer_started';
+	timer_duration: number;
+}
+
+export interface GameCompletedMessage extends BaseMessage {
+	type: 'game_completed';
+	final_scores: { [key: string]: number };
+	reason?: string;
+}
+
+export interface GameAbandonedMessage extends BaseMessage {
+	type: 'game_abandoned';
+	final_scores: { [key: string]: number };
+}
+
 // Union type of all possible messages
 export type IncomingMessage =
 	| ConnectionEstablishedMessage
@@ -296,8 +340,12 @@ export type IncomingMessage =
 	| FJCategoryShownMessage
 	| FJWagerSubmittedMessage
 	| FJClueRevealedMessage
+	| FJTimerStartedMessage
 	| FJAnswerSubmittedMessage
 	| FJAnswerJudgedMessage
+	| RoundChangedMessage
+	| GameCompletedMessage
+	| GameAbandonedMessage
 	| ErrorMessage;
 
 export type OutgoingMessage =
@@ -317,8 +365,12 @@ export type OutgoingMessage =
 	| StartFinalJeopardyMessage
 	| SubmitFJWagerMessage
 	| RevealFJClueMessage
+	| StartFJTimerMessage
 	| SubmitFJAnswerMessage
-	| JudgeFJAnswerMessage;
+	| JudgeFJAnswerMessage
+	| StartRoundMessage
+	| EndGameMessage
+	| AbandonGameMessage;
 	
 
 
