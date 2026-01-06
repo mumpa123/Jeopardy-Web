@@ -1,4 +1,4 @@
-#!/mnt/c/Users/patri/Documents/jeopardyv2_research/Jeopardy-Web/Main_Code/jeopardy_v2/venv/bin/python3
+#!/home/patrick/projects/jeopardy_game/Jeopardy-Web/Main_Code/jeopardy_v2/venv/bin/python
 import sys
 from automat._visualize import tool
 if __name__ == '__main__':

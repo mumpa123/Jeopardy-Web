@@ -66,6 +66,9 @@ export function getPlayerColor(playerNumber: number): string {
     1: '#3498db',  // Blue
     2: '#e74c3c',  // Red
     3: '#f39c12',  // Orange
+    4: '#9b59b6',  // Purple
+    5: '#2ecc71',  // Green
+    6: '#e91e63',  // Pink
   };
   return colors[playerNumber as keyof typeof colors] || '#95a5a6';
 }

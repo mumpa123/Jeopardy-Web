@@ -14,7 +14,7 @@ export function GameCard({ game }: GameCardProps) {
 
   // Get player count
   const playerCount = game.participants?.length || 0;
-  const maxPlayers = 3;
+  const maxPlayers = 6;
 
   // Get status badge color
   const getStatusColor = (status: string) => {
@@ -127,14 +127,24 @@ export function GameCard({ game }: GameCardProps) {
       {/* Action Buttons */}
       <div className="game-card-actions">
         {game.status === 'waiting' && (
-          <button className="btn-join" onClick={handleJoinGame}>
-            Join Game
-          </button>
+          <>
+            <button className="btn-join" onClick={handleJoinGame}>
+              Join Game
+            </button>
+            <button className="btn-spectate" onClick={handleSpectate}>
+              View Board
+            </button>
+          </>
         )}
         {game.status === 'active' && (
-          <button className="btn-spectate" onClick={handleSpectate}>
-            Spectate
-          </button>
+          <>
+            <button className="btn-join" onClick={handleJoinGame}>
+              Join Game
+            </button>
+            <button className="btn-spectate" onClick={handleSpectate}>
+              Spectate
+            </button>
+          </>
         )}
         {game.status === 'completed' && (
           <button className="btn-spectate" onClick={handleSpectate}>

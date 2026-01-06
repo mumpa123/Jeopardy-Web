@@ -332,9 +332,9 @@ class GameViewSet(viewsets.ModelViewSet):
 
         # Check if game is full
         current_players = GameParticipant.objects.filter(game=game).count()
-        if current_players >= 3:
+        if current_players >= 6:
             return Response(
-                    {'error': 'Game is full (max 3 players)'},
+                    {'error': 'Game is full (max 6 players)'},
                     status=status.HTTP_400_BAD_REQUEST
             )
 

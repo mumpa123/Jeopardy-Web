@@ -1,4 +1,4 @@
-#!/mnt/c/Users/patri/Documents/jeopardyv2_research/Jeopardy-Web/Main_Code/jeopardy_v2/venv/bin/python3
+#!/home/patrick/projects/jeopardy_game/Jeopardy-Web/Main_Code/jeopardy_v2/venv/bin/python
 import sys
 from autobahn.__main__ import _main
 if __name__ == '__main__':

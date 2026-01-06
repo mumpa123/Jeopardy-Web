@@ -259,7 +259,7 @@ class GameParticipant(models.Model):
         )
 
     player_number = models.IntegerField(
-            help_text="Position (1, 2, or 3)"
+            help_text="Position (1-6)"
         )
 
     score = models.IntegerField(
