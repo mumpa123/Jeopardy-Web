@@ -56,7 +56,7 @@ VITE_WS_PORT=8000
 
 def update_allowed_hosts(ip):
     """
-    Check if IP is in Django ALLOWED_HOSTS
+    Add IP to Django ALLOWED_HOSTS if not already present
     """
     settings_path = Path(__file__).parent / 'backend' / 'settings.py'
 
@@ -65,15 +65,38 @@ def update_allowed_hosts(ip):
             content = f.read()
 
         # Check if IP is already in ALLOWED_HOSTS
-        if ip in content:
+        if f"'{ip}'" in content or f'"{ip}"' in content:
             print(f"✓ IP {ip} already in ALLOWED_HOSTS")
             return True
-        else:
-            print(f"⚠ IP {ip} not found in ALLOWED_HOSTS")
-            print(f"  Add it manually to backend/settings.py, or set DEBUG=True for development")
+
+        # Find the ALLOWED_HOSTS line and add the IP
+        import re
+        pattern = r"(ALLOWED_HOSTS\s*=\s*\[)([^\]]*?)(\])"
+
+        def add_ip(match):
+            start = match.group(1)
+            hosts = match.group(2)
+            end = match.group(3)
+
+            # Add the new IP to the list
+            if hosts.strip():
+                return f"{start}{hosts}, '{ip}'{end}"
+            else:
+                return f"{start}'{ip}'{end}"
+
+        new_content = re.sub(pattern, add_ip, content, count=1)
+
+        if new_content != content:
+            with open(settings_path, 'w') as f:
+                f.write(new_content)
+            print(f"✓ Added {ip} to ALLOWED_HOSTS")
             return True
+        else:
+            print(f"⚠ Could not find ALLOWED_HOSTS in settings.py")
+            return True
+
     except Exception as e:
-        print(f"✗ Error checking settings.py: {e}")
+        print(f"✗ Error updating ALLOWED_HOSTS: {e}")
         return False
 
 def main():

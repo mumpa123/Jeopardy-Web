@@ -44,6 +44,12 @@
   animation: buzzerPulse 1s ease-in-out infinite;
 }
 
+.clue-card.buzz-won {
+  border: 8px solid #00ff00;
+  box-shadow: 0 0 30px rgba(0, 255, 0, 0.8);
+  animation: buzzWonPulse 1s ease-in-out infinite;
+}
+
 @keyframes buzzerPulse {
   0%, 100% {
     border-color: #ff0000;
@@ -52,6 +58,17 @@
   50% {
     border-color: #ff4444;
     box-shadow: 0 0 40px rgba(255, 0, 0, 1);
+  }
+}
+
+@keyframes buzzWonPulse {
+  0%, 100% {
+    border-color: #00ff00;
+    box-shadow: 0 0 30px rgba(0, 255, 0, 0.8);
+  }
+  50% {
+    border-color: #44ff44;
+    box-shadow: 0 0 40px rgba(0, 255, 0, 1);
   }
 }
 

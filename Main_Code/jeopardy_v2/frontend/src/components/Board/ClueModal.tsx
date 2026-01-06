@@ -9,9 +9,10 @@ interface ClueModalProps {
   onClose: () => void;
   showAnswer?: boolean;
   buzzerEnabled?: boolean;
+  buzzWon?: boolean;
 }
 
-export function ClueModal({ clue, currentRound, onClose, showAnswer = false, buzzerEnabled = false }: ClueModalProps) {
+export function ClueModal({ clue, currentRound, onClose, showAnswer = false, buzzerEnabled = false, buzzWon = false }: ClueModalProps) {
   const questionRef = useRef<HTMLDivElement>(null);
   const answerRef = useRef<HTMLDivElement>(null);
   const [questionFontSize, setQuestionFontSize] = useState(6); // rem
@@ -87,7 +88,7 @@ export function ClueModal({ clue, currentRound, onClose, showAnswer = false, buz
 
   return (
     <div className="clue-modal-overlay" onClick={onClose}>
-      <div className={`clue-modal ${buzzerEnabled ? 'buzzer-active' : ''}`} onClick={(e) => e.stopPropagation()}>
+      <div className={`clue-modal ${buzzWon ? 'buzz-won' : buzzerEnabled ? 'buzzer-active' : ''}`} onClick={(e) => e.stopPropagation()}>
         <div className="clue-value-header">
           {formatCurrency(displayValue)}
         </div>

@@ -54,3 +54,6 @@ htmlcov/
 
 # Redis dump
 dump.rdb
+
+# Server runtime files
+.pids/

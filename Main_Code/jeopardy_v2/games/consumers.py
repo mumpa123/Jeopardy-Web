@@ -281,6 +281,29 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         # If answer is correct, set this player as current player (for Daily Doubles)
         if correct:
             await database_sync_to_async(self.engine.set_current_player)(player_number)
+        else:
+            # Answer is incorrect - mark player as attempted and re-enable buzzing
+            await database_sync_to_async(self.engine.mark_player_attempted)(player_number)
+
+            # Clear old buzz data so remaining players can buzz fresh
+            await database_sync_to_async(self.engine.clear_buzzer_for_retry)()
+
+            # Unlock buzzer so others can buzz again
+            unlock_token = await database_sync_to_async(self.engine.unlock_buzzer)()
+
+            # Get current clue ID
+            state = await database_sync_to_async(self.engine.get_state)()
+            clue_id = state.get('current_clue')
+
+            # Broadcast buzzer_enabled so players can buzz again
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'buzzer_enabled',
+                    'clue_id': clue_id,
+                    'unlock_token': unlock_token
+                }
+            )
 
         # Get current player to send to frontend
         current_player = await database_sync_to_async(self.engine.get_current_player)()

@@ -8,6 +8,7 @@ interface BoardProps {
   revealedClues: number[];
   activeClueId?: number | null;
   buzzerEnabled?: boolean;
+  buzzWonClueId?: number | null;
   onClueClick: (clue: Clue) => void;
   round: 'single' | 'double';
   disabled?: boolean;
@@ -18,6 +19,7 @@ export function Board({
   revealedClues,
   activeClueId,
   buzzerEnabled = false,
+  buzzWonClueId = null,
   onClueClick,
   round,
   disabled = false
@@ -67,7 +69,20 @@ export function Board({
 
             const isRevealed = revealedClues.includes(clue.id);
             const isActive = activeClueId === clue.id && buzzerEnabled;
+            const buzzWon = buzzWonClueId === clue.id;
             const value = getClueValue(row, round);
+
+            // Debug logging for the active clue
+            if (clue.id === activeClueId || clue.id === buzzWonClueId) {
+              console.log(`[Board] Clue ${clue.id}:`, {
+                isActive,
+                buzzWon,
+                activeClueId,
+                buzzWonClueId,
+                buzzerEnabled,
+                className: `buzzer-active=${isActive}, buzz-won=${buzzWon}`
+              });
+            }
 
             return (
               <ClueCard
@@ -76,6 +91,7 @@ export function Board({
                 isRevealed={isRevealed}
                 isDailyDouble={clue.is_daily_double}
                 isActive={isActive}
+                buzzWon={buzzWon}
                 onClick={() => onClueClick(clue)}
                 disabled={disabled}
               />

@@ -40,6 +40,7 @@ class GameStateManager:
         self.dd_state_key = f"game:{self.game_id}:dd_state"
         self.fj_state_key = f"game:{self.game_id}:fj_state"
         self.cooldown_key = f"game:{self.game_id}:buzz_cooldowns"
+        self.attempted_players_key = f"game:{self.game_id}:attempted_players"
 
         # Buzz cooldown duration in seconds
         self.BUZZ_COOLDOWN_SECONDS = 2
@@ -160,10 +161,11 @@ class GameStateManager:
     def reset_buzzer(self) -> None:
         """
         Reset buzzer state for next clue.
-        Clears all buzz data.
+        Clears all buzz data and attempted players.
         """
         self.redis.delete(self.buzzer_key)
         self.redis.delete(f"{self.buzzer_key}:order")
+        self.redis.delete(self.attempted_players_key)
 
     def reset_game(self) -> Dict:
         """
@@ -248,11 +250,18 @@ class GameStateManager:
         lua_script = """
         local buzzer_key = KEYS[1]
         local cooldown_key = KEYS[2]
+        local attempted_key = KEYS[3]
         local player = ARGV[1]
         local timestamp = ARGV[2]
         local current_time = tonumber(ARGV[3])
         local cooldown_duration = tonumber(ARGV[4])
         local client_unlock_token = ARGV[5]  -- Token client received from unlock broadcast
+
+        -- Check if player has already attempted this clue
+        local already_attempted = redis.call('SISMEMBER', attempted_key, player)
+        if already_attempted == 1 then
+            return {0, -3, -1, 0}  -- Not accepted, already attempted this clue
+        end
 
         -- Check if player is in cooldown
         local last_buzz_time = redis.call('HGET', cooldown_key, player)
@@ -329,9 +338,10 @@ class GameStateManager:
         # Execute Lua script
         result = self.redis.eval(
                 lua_script,
-                2,  # Number of keys
+                3,  # Number of keys
                 self.buzzer_key,  # KEYS[1]
                 self.cooldown_key,  # KEYS[2]
+                self.attempted_players_key,  # KEYS[3]
                 player_number,    # ARGV[1]
                 server_timestamp_us,  # ARGV[2]
                 current_time_seconds,  # ARGV[3]
@@ -351,6 +361,36 @@ class GameStateManager:
                 'cooldown': is_cooldown_rejection or is_early_buzz,
                 'cooldown_remaining': float(result[3]) if result[3] > 0 else 0.0
         }
+
+    def mark_player_attempted(self, player_number: int) -> None:
+        """
+        Mark a player as having attempted the current clue.
+        This prevents them from buzzing again on the same clue.
+
+        Args:
+            player_number: Which player attempted (1, 2, or 3)
+        """
+        self.redis.sadd(self.attempted_players_key, player_number)
+        self.redis.expire(self.attempted_players_key, 86400)  # 24 hour expiry
+
+    def clear_buzzer_for_retry(self) -> None:
+        """
+        Clear buzzer state for re-buzzing after incorrect answer.
+        This clears buzz data but KEEPS the attempted players list.
+        """
+        self.redis.delete(self.buzzer_key)
+        self.redis.delete(f"{self.buzzer_key}:order")
+        # Note: We do NOT delete attempted_players_key - that persists for the clue
+
+    def get_attempted_players(self) -> List[int]:
+        """
+        Get list of players who have attempted the current clue.
+
+        Returns:
+            List of player numbers who have attempted
+        """
+        attempted = self.redis.smembers(self.attempted_players_key)
+        return [int(p) for p in attempted]
 
     def get_buzzer_state(self) -> Dict:
         """
@@ -622,6 +662,7 @@ class GameStateManager:
         self.redis.delete(f"{self.fj_state_key}:answers")
         self.redis.delete(f"{self.fj_state_key}:judged")
         self.redis.delete(self.cooldown_key)
+        self.redis.delete(self.attempted_players_key)
 
 
 

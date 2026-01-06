@@ -311,6 +311,8 @@ export function PlayerView() {
 
       case 'buzzer_enabled':
         setCanBuzz(true);
+        // Reset buzzed state so players can buzz again (unless they already attempted)
+        setBuzzed(false);
         // Store unlock token for buzz validation
         if (message.unlock_token) {
           setUnlockToken(message.unlock_token);
@@ -327,6 +329,11 @@ export function PlayerView() {
         if (playerNumber && message.player_number === playerNumber) {
           if (message.accepted) {
             setStatus(message.winner === message.player_number ? 'You won the buzz!' : `You were #${message.position} to buzz`);
+          } else if (message.position === -3) {
+            // Already attempted this clue
+            setStatus('You already attempted this clue');
+            setBuzzed(false);
+            setCanBuzz(false);  // Disable buzzing for this player on this clue
           } else if (message.cooldown) {
             // Buzz rejected due to cooldown or early buzz
             const cooldownTime = Math.ceil(message.cooldown_remaining);

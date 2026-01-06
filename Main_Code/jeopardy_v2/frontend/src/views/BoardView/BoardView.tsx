@@ -103,7 +103,11 @@ export function BoardView() {
   const [currentRound, setCurrentRound] = useState<'single' | 'double' | 'final'>('single');
   const [buzzerEnabled, setBuzzerEnabled] = useState(false);
   const [activeClueId, setActiveClueId] = useState<number | null>(null);
+  const [buzzWonClueId, setBuzzWonClueId] = useState<number | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState<number | null>(null);
+
+  // Use ref to track activeClueId for WebSocket handlers (avoid stale closure)
+  const activeClueIdRef = useRef<number | null>(null);
 
   // Daily Double state
   const [isDailyDouble, setIsDailyDouble] = useState(false);
@@ -247,8 +251,9 @@ export function BoardView() {
 
       case 'clue_revealed':
         // Use clue data from WebSocket message directly
+        const clueId = typeof message.clue.id === 'string' ? parseInt(message.clue.id) : message.clue.id;
         const clueData: Clue = {
-          id: message.clue.id,
+          id: clueId,
           question: message.clue.question,
           answer: message.clue.answer,
           value: message.clue.value,
@@ -256,7 +261,8 @@ export function BoardView() {
           is_daily_double: message.clue.is_daily_double
         };
         setSelectedClue(clueData);
-        setActiveClueId(message.clue.id);
+        setActiveClueId(clueId);
+        activeClueIdRef.current = clueId; // Update ref
         setBuzzerEnabled(false); // Buzzer locked until host enables it
         setShowAnswer(false);
         console.log('[BoardView] Clue revealed, buzzer locked');
@@ -271,7 +277,39 @@ export function BoardView() {
 
       case 'buzzer_enabled':
         setBuzzerEnabled(true);
+        setBuzzWonClueId(null); // Clear green border, turn back to red
+        // Always set activeClueId when buzzer is enabled
+        if (message.clue_id) {
+          const clueId = typeof message.clue_id === 'string' ? parseInt(message.clue_id) : message.clue_id;
+          setActiveClueId(clueId);
+          activeClueIdRef.current = clueId; // Update ref
+        }
         console.log('[BoardView] Buzzer enabled for clue:', message.clue_id);
+        break;
+
+      case 'buzz_result':
+        console.log('[BoardView] buzz_result debug:', {
+          accepted: message.accepted,
+          winner: message.winner,
+          player_number: message.player_number,
+          isWinner: message.player_number === message.winner,
+          activeClueIdFromRef: activeClueIdRef.current,
+          activeClueIdFromState: activeClueId
+        });
+        // When someone wins a buzz, turn the border green
+        // Use ref to avoid stale closure
+        if (message.accepted && message.winner && message.player_number === message.winner && activeClueIdRef.current) {
+          console.log('[BoardView] Setting buzzWonClueId to', activeClueIdRef.current);
+          setBuzzWonClueId(activeClueIdRef.current);
+        }
+        break;
+
+      case 'answer_judged':
+        // If answer is incorrect, reset to red border (buzzing will reopen)
+        if (!message.correct) {
+          setBuzzWonClueId(null);
+          console.log('[BoardView] Answer incorrect, resetting border to red');
+        }
         break;
 
       case 'return_to_board':
@@ -280,7 +318,9 @@ export function BoardView() {
         console.log('[BoardView] Current selectedClue before clear:', selectedClue);
         setSelectedClue(null);
         setActiveClueId(null);
+        activeClueIdRef.current = null; // Clear ref
         setBuzzerEnabled(false);
+        setBuzzWonClueId(null);
         setShowAnswer(false);
         // Clear DD state
         setIsDailyDouble(false);
@@ -517,15 +557,19 @@ export function BoardView() {
     <div className="board-view">
       <div className="board-content">
         {currentCategories.length > 0 ? (
-          <Board
-            categories={currentCategories}
-            revealedClues={revealedClues}
-            activeClueId={activeClueId}
-            buzzerEnabled={buzzerEnabled}
-            onClueClick={() => {}} // No-op - board is display-only
-            round={currentRound}
-            disabled={false}
-          />
+          <>
+            {console.log('[BoardView] Rendering Board with:', { activeClueId, buzzerEnabled, buzzWonClueId })}
+            <Board
+              categories={currentCategories}
+              revealedClues={revealedClues}
+              activeClueId={activeClueId}
+              buzzerEnabled={buzzerEnabled}
+              buzzWonClueId={buzzWonClueId}
+              onClueClick={() => {}} // No-op - board is display-only
+              round={currentRound}
+              disabled={false}
+            />
+          </>
         ) : categories.length > 0 ? (
           <div style={{ color: 'white', textAlign: 'center', padding: '2rem' }}>
             No categories for {currentRound} jeopardy
@@ -589,6 +633,7 @@ export function BoardView() {
           onClose={() => {}} // No-op - controlled by host
           showAnswer={showAnswer}
           buzzerEnabled={buzzerEnabled}
+          buzzWon={buzzWonClueId === selectedClue?.id}
         />
       )}
     </div>

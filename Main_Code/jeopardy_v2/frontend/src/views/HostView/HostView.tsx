@@ -119,6 +119,9 @@ export function HostView() {
   // Buzzer enabled state (starts false, set to true when host clicks "Finished Reading")
   const [buzzerEnabled, setBuzzerEnabled] = useState(false);
 
+  // Buzz won state (tracks clue ID when someone wins a buzz - for green border)
+  const [buzzWonClueId, setBuzzWonClueId] = useState<number | null>(null);
+
   // Current player (who has control of the board)
   const [currentPlayer, setCurrentPlayer] = useState<number | null>(null);
 
@@ -316,6 +319,13 @@ export function HostView() {
 
     switch (message.type) {
       case 'buzz_result':
+        console.log('[HostView] buzz_result:', {
+          player_number: message.player_number,
+          winner: message.winner,
+          accepted: message.accepted,
+          selectedClueId: selectedClue?.id,
+          isWinner: message.player_number === message.winner
+        });
         if (message.accepted && message.winner) {
           // Add to buzz queue - use player_name from message (sent by backend)
           setBuzzQueue(prev => [
@@ -326,6 +336,12 @@ export function HostView() {
               timestamp: message.server_timestamp
             }
           ]);
+
+          // If this player won the buzz (first to buzz), turn border green
+          if (message.player_number === message.winner && selectedClue) {
+            console.log('[HostView] Setting buzzWonClueId to', selectedClue.id);
+            setBuzzWonClueId(selectedClue.id);
+          }
         }
         break;
 
@@ -413,6 +429,7 @@ export function HostView() {
         setShowAnswer(false);
         setBuzzQueue([]);
         setBuzzerEnabled(false);
+        setBuzzWonClueId(null);
         // Clear DD state
         setIsDailyDouble(false);
         setDdStage('detected');
@@ -916,8 +933,11 @@ export function HostView() {
         });
       }
 
-      // Remove the first player from buzz queue so next player can answer
-      setBuzzQueue(prev => prev.slice(1));
+      // Clear the entire buzz queue - buzzing will re-open for remaining players
+      setBuzzQueue([]);
+
+      // Reset buzz won state so border turns red again
+      setBuzzWonClueId(null);
 
       console.log('Marked incorrect for', winner.playerName, 'value:', clueValue);
     }
@@ -1084,12 +1104,18 @@ export function HostView() {
           <ScoreDisplay scores={scores} playerNames={playerNames} currentPlayer={currentPlayer} />
           <div className="board-container">
             {currentCategories.length > 0 ? (
-              <Board
-                categories={currentCategories}
-                revealedClues={revealedClues}
-                onClueClick={handleClueClick}
-                round={currentRound}
-              />
+              <>
+                {console.log('[HostView] Rendering Board with:', { activeClueId: selectedClue?.id, buzzerEnabled, buzzWonClueId })}
+                <Board
+                  categories={currentCategories}
+                  revealedClues={revealedClues}
+                  activeClueId={selectedClue?.id}
+                  buzzerEnabled={buzzerEnabled}
+                  buzzWonClueId={buzzWonClueId}
+                  onClueClick={handleClueClick}
+                  round={currentRound}
+                />
+              </>
             ) : categories.length > 0 ? (
               <div style={{ color: 'white', textAlign: 'center', padding: '2rem' }}>
                 No categories for {currentRound} jeopardy
