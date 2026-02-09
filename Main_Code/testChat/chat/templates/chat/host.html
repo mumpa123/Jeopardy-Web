@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Host_Testing</title>
+</head>
+<body>
+    <!-- Clickable board 6x6 table-->
+    <div class="board">
+    <table class="board_table">
+        <tr>
+          <th class="category"><a onclick="cat(1)">CATEGORY1</a></th> <!-- I may want a function to auto change font size based on num of chars if i can. but not strictly necessary.-->
+          <th class="category"><a onclick="cat(2)">CATEGORY2</a></th>
+          <th class="category"><a onclick="cat(3)">CATEGORY3</a></th>
+          <th class="category"><a onclick="cat(4)">CATEGORY4</a></th>
+          <th class="category"><a onclick="cat(5)">CATEGORY5</a></th>
+          <th class="category"><a onclick="cat(6)">CATEGORY6</a></th>
+        </tr>
+        <tr>
+          <td><a onclick="select(1)">$200</a></td>
+          <td><a onclick="select(2)">$200</a></td>
+          <td><a onclick="select(3)">$200</a></td>
+          <td><a onclick="select(4)">$200</a></td>
+          <td><a onclick="select(5)">$200</a></td>
+          <td><a onclick="select(6)">$200</a></td>
+        </tr>
+        <tr>
+          <td><a onclick="select(7)">$400</a></td>
+          <td><a onclick="select(8)">$400</a></td>
+          <td><a onclick="select(9)">$400</a></td>
+          <td><a onclick="select(10)">$400</a></td>
+          <td><a onclick="select(11)">$400</a></td>
+          <td><a onclick="select(12)">$400</a></td>
+        </tr>
+        <tr>
+            <td><a onclick="select(13)">$600</a></td>
+            <td><a onclick="select(14)">$600</a></td>
+            <td><a onclick="select(15)">$600</a></td>
+            <td><a onclick="select(16)">$600</a></td>
+            <td><a onclick="select(17)">$600</a></td>
+            <td><a onclick="select(18)">$600</a></td>
+          </tr>
+          <tr>
+            <td><a onclick="select(19)">$800</a></td>
+            <td><a onclick="select(20)">$800</a></td>
+            <td><a onclick="select(21)">$800</a></td>
+            <td><a onclick="select(22)">$800</a></td>
+            <td><a onclick="select(23)">$800</a></td>
+            <td><a onclick="select(24)">$800</a></td>
+          </tr>
+          <tr>
+            <td><a onclick="select(25)">$1000</a></td>
+            <td><a onclick="select(26)">$1000</a></td>
+            <td><a onclick="select(27)">$1000</a></td>
+            <td><a onclick="select(28)">$1000</a></td>
+            <td><a onclick="select(29)">$1000</a></td>
+            <td><a onclick="select(30)">$1000</a></td>
+          </tr>
+      </table>
+    </div>
+      <!-- <script>
+        function cat(num){
+            console.log("testing category");
+            console.log("cat_num = " + num.toString());
+        }
+        function select(num){
+            console.log("testing clues");
+            console.log("testing clue_num = " + num.toString());
+        }
+        
+      </script> -->
+    <!-- Clue box -->
+    <div class="box_clues">
+      <table class="clue_box">
+        <tr>
+            <th>CATEGORY_VAL</th>
+            <th>VALUE($)</th>
+            <th>FINISHED READING</th>
+        </tr>
+        <tr>
+            <td class="clue_read" colspan="3">CLUE DATA EIFSNOFE FISNOFNEF SFINEOF SFINSIFNEF</td>
+        </tr>
+        <tr>
+            <td class="answer_read" colspan="3">ANSWER DATA</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Player scores/info -->
+    <div class="player_info">
+        <table class="player_box">
+            <tr>
+                <td>Player1-(name)</td>
+            </tr>
+            <tr>
+                <td>SCORE: $9999</td>
+            </tr>
+            <tr>
+                <td>Player2-(name)</td>
+            </tr>
+            <tr>
+                <td>SCORE: $999999</td>
+            </tr>
+            <tr>
+                <td>Player3-(name)</td>
+                </tr>
+                <tr>
+                <td>SCORE: $130,225</td>
+            </tr>
+        </table>
+    </div>
+    <!-- Player buzzed box -->
+
+    <div class="player_buzzed_box">
+        <table>
+            <tr>
+                <td>Player1-(name)</td>
+                <td>Player2-(name)</td>
+                <td>Player3-(name)</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Correct/Incorrect box -->
+<div class="selection_box">
+    <table>
+        <tr>
+            <td>CORRECT</td>
+            <td>INCORRECT</td>
+            
+        </tr>
+    </table>
+</div>
+    <!-- Daliy double Wager box+js-calculator -->
+<div class="wager_calculator">
+    <h1>Daily Double Calculator</h1>
+    <table class="wager">
+        <tr>
+            <td><input type="text" max-length="6"> </td>
+        </tr>
+        <tr>
+            <td><button>CONFIRM</button></td>
+        </tr>
+    </table>
+    <table class="checkers">
+
+    </table>
+</div>
+    <!-- next clue force button -->
+<button class="next_clue">NEXT CLUE</button>
+
+
+
+</body>
+</html>

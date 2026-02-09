@@ -1,0 +1,146 @@
+.daily-double-controls {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  border: 3px solid #b8860b;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+}
+
+.dd-header {
+  text-align: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #b8860b;
+}
+
+.dd-header h3 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #8b4513;
+  margin: 0 0 0.5rem 0;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+.dd-player-name {
+  font-size: 1.1rem;
+  color: #654321;
+  margin: 0;
+}
+
+.dd-stage {
+  text-align: center;
+}
+
+.dd-status {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #654321;
+  margin-bottom: 1rem;
+}
+
+.dd-complete {
+  color: #2e7d32;
+  font-weight: bold;
+}
+
+.dd-wager-amount {
+  font-size: 1.4rem;
+  color: #1565c0;
+  font-weight: bold;
+}
+
+.dd-reveal-button,
+.dd-show-clue-button {
+  background: linear-gradient(135deg, #1976d2, #1565c0);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.dd-reveal-button:hover,
+.dd-show-clue-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dd-reveal-button:active,
+.dd-show-clue-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.dd-hint {
+  font-size: 0.9rem;
+  color: #795548;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+.dd-spinner {
+  font-size: 2rem;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.dd-submitted-answer {
+  background: white;
+  border: 2px solid #b8860b;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.dd-judge-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.dd-judge-correct,
+.dd-judge-incorrect {
+  padding: 0.75rem 2rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.dd-judge-correct {
+  background: linear-gradient(135deg, #4caf50, #388e3c);
+  color: white;
+}
+
+.dd-judge-incorrect {
+  background: linear-gradient(135deg, #f44336, #d32f2f);
+  color: white;
+}
+
+.dd-judge-correct:hover,
+.dd-judge-incorrect:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dd-judge-correct:active,
+.dd-judge-incorrect:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}

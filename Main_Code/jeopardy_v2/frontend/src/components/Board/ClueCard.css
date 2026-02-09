@@ -1,0 +1,140 @@
+@font-face {
+  font-family: 'gyparody';
+  src: url('/fonts/gyparody.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.clue-card {
+  aspect-ratio: 1.5 / 1;
+  background-image: linear-gradient(to right, rgb(1, 27, 172), rgb(0, 19, 150));
+  border: 5px solid black;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Arial Black', sans-serif;
+  color: #FFD700;
+  text-shadow: 2px 4px 4px black;
+}
+
+.clue-card:not(.revealed):not(.disabled):hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+}
+
+.clue-card:not(.revealed):not(.disabled):active {
+  transform: scale(0.98);
+}
+
+.clue-card.revealed {
+  background: #1a1a1a;
+  border-color: #333;
+  cursor: default;
+}
+
+.clue-card.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.clue-card.buzzer-active {
+  border: 8px solid #ff0000;
+  box-shadow: 0 0 30px rgba(255, 0, 0, 0.8);
+  animation: buzzerPulse 1s ease-in-out infinite;
+}
+
+.clue-card.buzz-won {
+  border: 8px solid #00ff00;
+  box-shadow: 0 0 30px rgba(0, 255, 0, 0.8);
+  animation: buzzWonPulse 1s ease-in-out infinite;
+}
+
+@keyframes buzzerPulse {
+  0%, 100% {
+    border-color: #ff0000;
+    box-shadow: 0 0 30px rgba(255, 0, 0, 0.8);
+  }
+  50% {
+    border-color: #ff4444;
+    box-shadow: 0 0 40px rgba(255, 0, 0, 1);
+  }
+}
+
+@keyframes buzzWonPulse {
+  0%, 100% {
+    border-color: #00ff00;
+    box-shadow: 0 0 30px rgba(0, 255, 0, 0.8);
+  }
+  50% {
+    border-color: #44ff44;
+    box-shadow: 0 0 40px rgba(0, 255, 0, 1);
+  }
+}
+
+.clue-value {
+  font-size: 4.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-weight: bold;
+  color: #FFD700 !important;
+  text-shadow: 2px 4px 4px black;
+  font-family: 'gyparody', 'Arial Black', sans-serif;
+}
+
+.clue-card .clue-value {
+  color: #FFD700 !important;
+}
+
+/* Daily Double styling */
+.clue-dd-text {
+  font-size: 5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-weight: bold;
+  color: #ff4444;
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.7);
+  letter-spacing: 0.2em;
+}
+
+.clue-card.daily-double-indicator {
+  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+  border: 3px solid #ff4444;
+  box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+  animation: ddPulse 2s ease-in-out infinite;
+}
+
+@keyframes ddPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(255, 68, 68, 0.8);
+  }
+}
+
+/* Responsive font size */
+@media (max-width: 1200px) {
+  .clue-value {
+    font-size: 3.5rem;
+  }
+
+  .clue-dd-text {
+    font-size: 4rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .clue-value {
+    font-size: 2.5rem;
+  }
+
+  .clue-dd-text {
+    font-size: 3rem;
+  }
+}

@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js"></script>
+    
+    <title>JEOPARDY!</title>
+</head>
+<body>
+    {{ season_num|json_script:"season_num"}}
+    {{ show_num|json_script:"show_num"}}
+    {{ player_name|json_script:"player_name"}} <!-- gives the player name but not number that will be retrieved i think from a form or input box-->
+    {{ player_num|json_script:"player_num"}} <!-- either player 1,2,3 and int()-->
+    {{ type|json_script:"type"}} <!-- gives either player,board,or host-->
+    {{ clues|json_script:"clues"}}
+    <script>
+        const player_name = JSON.parse(document.getElementById('player_name').textContent);
+        const player_num = JSON.parse(document.getElementById('player_num').textContent);
+        const type = JSON.parse(document.getElementById('type').textContent);
+        
+        const chatSocket = new WebSocket(
+            'ws://'
+            + window.location.host
+            + '/ws/chat/'
+            + 'test/'
+        );
+        chatSocket.onmessage = function(e) { 
+            
+            html_board_main_clue = `{% load static %}
+    <link rel="stylesheet" href="{% static 'main_clue.css' %}">
+    {% load static %} <audio id="think_music">
+    <source src="{% static "think_music.mp3" %}" type="audio/mpeg">
+      </audio>
+      {% load static %} <audio id="final_clue">
+    <source src="{% static "final_jeopardy_clue_sound.mp3" %}" type="audio/mpeg">
+      </audio>
+      
+    <div class="current_clue">
+        <span class="inner_box">THIS IS A TESTING CLUE INDICATING THE FACT THAT YOU SHOULD NEVER SEE THIS UNLESS YOU ARE OF COURSE ME</span>
+    </div>
+    
+        `
+
+            html_board = `{% load static %}
+            <link rel="stylesheet" href="{% static 'board_style.css' %}">
+            <div class="board">
+        <table class="board_table">
+            <tr>
+              <td id="header1" class="header">CATEGORY1</td > 
+              <td id="header2" class="header">CATEGORY2</td >
+              <td id="header3" class="header">CATEGORY3</td >
+              <td id="header4" class="header">CATEGORY4</td >
+              <td id="header5" class="header">CATEGORY5</td >
+              <td id="header6" class="header">CATEGORY6</td >
+            </tr>
+            <tr>
+              <td id="unit" class="unit1">$200</td>
+              <td id="unit" class="unit2">$200</td>
+              <td id="unit" class="unit3">$200</td>
+              <td id="unit" class="unit4">$200</td>
+              <td id="unit" class="unit5">$200</td>
+              <td id="unit" class="unit6">$200</td>
+            </tr>
+            <tr>
+              <td id="unit" class="unit7">$400</td>
+              <td id="unit" class="unit8">$400</td>
+              <td id="unit" class="unit9">$400</td>
+              <td id="unit" class="unit10">$400</td>
+              <td id="unit" class="unit11">$400</td>
+              <td id="unit" class="unit12">$400</td>
+            </tr>
+            <tr>
+                <td id="unit" class="unit13">$600</td>
+                <td id="unit" class="unit14">$600</td>
+                <td id="unit" class="unit15">$600</td>
+                <td id="unit" class="unit16">$600</td>
+                <td id="unit" class="unit17">$600</td>
+                <td id="unit" class="unit18">$600</td>
+              </tr>
+              <tr>
+                <td id="unit" class="unit19">$800</td>
+                <td id="unit" class="unit20">$800</td>
+                <td id="unit" class="unit21">$800</td>
+                <td id="unit" class="unit22">$800</td>
+                <td id="unit" class="unit23">$800</td>
+                <td id="unit" class="unit24">$800</td>
+              </tr>
+              <tr>
+                <td id="unit" class="unit25">$1000</td>
+                <td id="unit" class="unit26">$1000</td>
+                <td id="unit" class="unit27">$1000</td>
+                <td id="unit" class="unit28">$1000</td>
+                <td id="unit" class="unit29">$1000</td>
+                <td id="unit" class="unit30">$1000</td>
+              </tr>
+          </table>
+        </div>
+        <style> .header {
+                background-image: {% load static %} url({% static 'blank_blue_jeopardy.png' %});
+                background-size: cover;
+                background-repeat: no-repeat;
+              }
+              #unit {
+                background-image: {% load static %} url({% static 'blank_blue_jeopardy.png' %});
+                background-size: cover;
+                background-repeat: no-repeat;
+              }
+              </style>
+        <div class="player_stuff">
+            <table>
+            <tr>
+                <td id="player_name1">TEST1</td>
+                <td id="player_name2">TEST2</td>
+                <td id="player_name3">TEST3</td>
+            </tr>
+            <tr>
+                <td id="player_score1">score1</td>
+                <td id="player_score2">score2</td>
+                <td id="player_score3">score3</td>
+            </tr>
+        </table>
+        </div>`
+            const data = JSON.parse(e.data); //since it sends a json i can just grab anything i need and itll be there depending perfect
+             //here is where it actually updates the html. thus what i'll have is onmessage on the host page.
+            // i'll set buzzed_flag = True and i'll store the player username from message into variable buzzed_player or something then i can have on board onmessage have a player light up
+            // screen based on it. then all functions will affect the player object from the host based on correct and incorrect answers.
+            const message_data = data["message"];
+            
+            console.log(message_data); //shows everything that is sent in console cuz why not bruh.
+            console.log(message_data["type"]);
+            if (message_data["type"] == "buzz"){ //buzz message
+                console.log("Player Buzzed!");
+                is_buzzed = document.querySelector(".buzz_bool").value;
+                
+                if (type == "host" && is_buzzed == "false"){
+                    content = {
+                        "type": "buzzed",
+                    }
+                    chatSocket.send(JSON.stringify({"message": content}));
+                    buzz_name = message_data["player_name"];
+                    buzz_num = message_data["player_num"];
+                    console.log("received names");
+                    console.log(buzz_name);
+
+                    console.log(buzz_num);
+                    $(document.querySelector(".buzzed_box")).empty();
+                    $(document.querySelector(".buzzed_box")).append(buzz_num);
+                    document.querySelector(".buzz_bool").value = "true";
+                    class_val = ".pl" + buzz_num;
+                    $(document.querySelector(class_val)).css("background-color","yellow");
+                }
+                
+                
+            }
+
+            if (message_data["type"] == "buzzed"){
+                if (type == "board"){
+                    // document.querySelector(".current_clue").style.border = "solid 8px rgb(0,19,150)";
+                    document.querySelector(".current_clue").style.border = "solid 8px rgb(255,255,255)";
+                }
+            }
+            if (message_data["type"] == "ready"){
+                console.log("player ready");
+                if (type == "host") {
+                    if (message_data["player_num"] == "1"){
+                        let player1 = message_data["player_name"];
+                        $(document.querySelector(".player1")).empty();
+                        $(document.querySelector(".player1")).append(player1);
+                        $(document.querySelector(".player1_score")).empty();
+                        $(document.querySelector(".player1_score")).append("0");
+                        $(document.querySelector(".pl1")).empty();
+                        $(document.querySelector(".pl1")).append(message_data["player_name"]);
+                        
+                    }
+                    if (message_data["player_num"] == "2"){
+                        let player2 = message_data["player_name"];
+                        $(document.querySelector(".player2")).empty();
+                        $(document.querySelector(".player2")).append(player2);
+                        $(document.querySelector(".player2_score")).empty();
+                        $(document.querySelector(".player2_score")).append("0");
+                        $(document.querySelector(".pl2")).empty();
+                        $(document.querySelector(".pl2")).append(message_data["player_name"]);
+                    }
+                    if (message_data["player_num"] == "3"){
+                        let player3 = message_data["player_name"];
+                        $(document.querySelector(".player3")).empty();
+                        $(document.querySelector(".player3")).append(player3);
+                        $(document.querySelector(".player3_score")).empty();
+                        $(document.querySelector(".player3_score")).append("0");
+                        $(document.querySelector(".pl3")).empty();
+                        $(document.querySelector(".pl3")).append(message_data["player_name"]);
+                    }
+                }
+
+                
+                
+                
+            }
+
+            if (message_data["type"] == "give_red"){
+                document.querySelector(".current_clue").style.border = "solid 8px red";
+            }
+            
+            if (message_data["type"] == "clue_for_board"){
+                console.log("yessir");
+                
+                if (type == "board"){
+                    console.log("received");
+                    let clue_num_val = message_data["clue_num"];
+                    if (message_data["game"] == "single"){
+
+                        if (message_data["dd"] == "yes"){
+                            $(document.body).empty();
+                            html_stuff = `{% load static %} <audio id="daily_double">
+    <source src="{% static "dd.mp3" %}" type="audio/mpeg">
+      </audio>`
+                            $(document.body).append(html_stuff);
+                            $(document.body).css("background-image","{% load static %} url({% static 'dd_pic.jpg' %})");
+                            $(document.body).css("background-size","cover");
+                            $(document.body).css("background-repeat","no-repeat");
+                            document.querySelector('#daily_double').play();
+
+                        }
+                        else {
+                            $(document.body).empty();
+                            $(document.body).append(html_board_main_clue);
+                            $(document.querySelector(".inner_box")).empty();
+                            console.log(clue_content.single.clues[clue_num_val]);
+                            $(document.querySelector(".current_clue")).css("background-image","{% load static %} url({% static 'blank_blue_jeopardy.png' %})");
+                            $(document.querySelector(".current_clue")).css("background-size","cover");
+                            $(document.querySelector(".current_clue")).css("background-repeat","no-repeat");
+                            $(document.querySelector(".inner_box")).append(clue_content.single.clues[clue_num_val].toUpperCase());
+                        }
+                    
+                    }
+                    if (message_data["game"] == "double"){
+                        if (message_data["dd"] == "yes"){
+                            $(document.body).empty();
+                            html_stuff = `{% load static %} <audio id="daily_double">
+    <source src="{% static "dd.mp3" %}" type="audio/mpeg">
+      </audio>`
+                            $(document.body).append(html_stuff);
+                            $(document.body).css("background-image","{% load static %} url({% static 'dd_pic.jpg' %})");
+                            $(document.body).css("background-size","cover");
+                            $(document.body).css("background-repeat","no-repeat");
+                            document.querySelector('#daily_double').play();
+
+                        }
+
+                        else {
+                            $(document.body).empty();
+                            $(document.body).append(html_board_main_clue);
+                            $(document.querySelector(".inner_box")).empty();
+                            console.log(clue_content.double.clues[clue_num_val]);
+                            $(document.querySelector(".current_clue")).css("background-image","{% load static %} url({% static 'blank_blue_jeopardy.png' %})");
+                            $(document.querySelector(".current_clue")).css("background-size","cover");
+                            $(document.querySelector(".current_clue")).css("background-repeat","no-repeat");
+                            $(document.querySelector(".inner_box")).append(clue_content.double.clues[clue_num_val].toUpperCase());
+                        }
+                    }
+                }
+            }
+            if (message_data["type"] == "return_to_board"){
+                if (type == "host"){
+                    document.querySelector('.buzz_bool').value = 'true';
+                }
+                if (type == "board"){
+                    console.log("talking");
+                    $(document.body).empty();
+                    $(document.body).append(html_board);
+                    cleared_clues = message_data["clues_revealed"];
+                    console.log(cleared_clues);
+                    if (message_data["game"] == "single"){
+                    for (let jo = 1; jo <= 6; jo++){
+                        let l = "#header" + jo;
+                        $(document.querySelector(l)).empty();
+                        $(document.querySelector(l)).append(clue_content.single.categories[jo-1]);
+                        console.log("welli am here");
+                    }
+                }
+                    if (message_data["game"] == "double"){
+                        console.log("i am a jello-man");
+                        for (let zig = 1; zig <= 6; zig++){
+                        let l = "#header" + zig;
+                        $(document.querySelector(l)).empty();
+                        $(document.querySelector(l)).append(clue_content.double.categories[zig]);
+                        
+                    }
+                    for (let i = 1; i <= 30; i++){
+                        let class_vals = ".unit" + i;
+                        
+                        $(document.querySelector(class_vals)).empty();
+                        $(document.querySelector(class_vals)).append("$" + (200 * (Math.floor((i-1)/6) + 1)*2));
+            } 
+                    }
+                    for (clue = 0; clue < cleared_clues.length; clue++){
+                        console.log(cleared_clues[clue]);
+                        class_grab = ".unit" + cleared_clues[clue];
+                        console.log(class_grab);
+                        $(document.querySelector(class_grab)).empty();
+                        
+                    }
+
+                   // grab player names and score and display;
+                   console.log("im a figgy pudding");
+                   console.log(message_data["player1_name"]);
+                    $(document.querySelector("#player_name1")).empty();
+                    $(document.querySelector("#player_name1")).append(message_data["player1_name"]);
+                    $(document.querySelector("#player_name2")).empty();
+                    $(document.querySelector("#player_name2")).append(message_data["player2_name"]);
+                    $(document.querySelector("#player_name3")).empty();
+                    $(document.querySelector("#player_name3")).append(message_data["player3_name"]);
+
+
+                    
+                    //score
+                    $(document.querySelector("#player_score1")).empty();
+                    $(document.querySelector("#player_score1")).append("$" + message_data["player1_score"]);
+                    $(document.querySelector("#player_score2")).empty();
+                    $(document.querySelector("#player_score2")).append("$" + message_data["player2_score"]);
+                    $(document.querySelector("#player_score3")).empty();
+                    $(document.querySelector("#player_score3")).append("$" + message_data["player3_score"]);
+                   
+
+                }
+            }
+            if (message_data["type"] == "read"){
+                if (type == "board"){
+                    if (message_data["finished"] == "yes"){
+                        document.querySelector(".current_clue").style.border = "solid 8px red";
+                    }
+                    if (message_data["final_start"] == "yes"){
+                        // play music
+                        document.querySelector(".current_clue").style.border = "solid 8px rgb(0,19,150)";
+                        console.log("hello music?");
+                        document.querySelector('#think_music').play();
+                    }
+            }
+            }
+            if (message_data["type"] == "single"){
+                if (type == "board"){
+                    for (let i = 1; i <= 30; i++){
+                        let class_vals = ".unit" + i;
+                        
+                        $(document.querySelector(class_vals)).empty();
+                        $(document.querySelector(class_vals)).append("$" + (200 * (Math.floor((i-1)/6) + 1)*2));
+            } 
+                    for (let num = 1; num <= 6; num++){
+                        let l = "#header" + num;
+                $(document.querySelector(l)).empty();
+                $(document.querySelector(l)).append(clue_content.single.categories[num]);
+                }
+        }
+            }
+
+            if (message_data["type"] == "double"){
+                if (type == "board"){
+                    for (let i = 1; i <= 30; i++){
+                        let class_vals = ".unit" + i;
+                        
+                        $(document.querySelector(class_vals)).empty();
+                        $(document.querySelector(class_vals)).append("$" + (200 * (Math.floor((i-1)/6) + 1)*2));
+            } 
+                    for (let num = 1; num <= 6; num++){
+                        let l = "#header" + num;
+                $(document.querySelector(l)).empty();
+                $(document.querySelector(l)).append(clue_content.double.categories[num]);
+                }
+        }
+            }
+
+
+            if (message_data["type"] == "final"){
+                if (type == "board"){
+                    console.log("final jeopardy");
+                    $(document.body).empty();
+                    $(document.body).append(html_board_main_clue);
+                    $(document.querySelector(".current_clue")).css("background-image","{% load static %} url({% static 'blank_blue_jeopardy.png' %})");
+                    $(document.querySelector(".current_clue")).css("background-size","cover");
+                    $(document.querySelector(".current_clue")).css("background-repeat","no-repeat");
+                    $(document.querySelector(".inner_box")).empty();
+                    $(document.querySelector(".inner_box")).append(clue_content.final["category"].toUpperCase());
+
+                }
+            }
+
+
+            if (message_data["type"] == "final_clue"){
+                if (type == "board"){
+                    $(document.body).empty();
+                    $(document.body).append(html_board_main_clue);
+                    $(document.querySelector(".current_clue")).css("background-image","{% load static %} url({% static 'blank_blue_jeopardy.png' %})");
+                    $(document.querySelector(".current_clue")).css("background-size","cover");
+                    $(document.querySelector(".current_clue")).css("background-repeat","no-repeat");
+                    $(document.querySelector(".inner_box")).empty();
+                    $(document.querySelector(".inner_box")).append(clue_content.final["clue"].toUpperCase());
+                    document.querySelector('#final_clue').play();
+                }
+            }
+
+            if (message_data["type"] == "final_wager"){
+                if (type == "host"){
+                    player_number = message_data["player_num"];
+                    class_val = ".wager" + player_number;
+                    
+                    document.querySelector(class_val).textContent = message_data["wager"];
+                }
+            }
+          
+            
+            }
+
+        chatSocket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly');
+        };
+
+        
+
+
+
+        if (type == "host"){
+            const season_num = JSON.parse(document.getElementById('season_num').textContent); 
+            const show_num = JSON.parse(document.getElementById('show_num').textContent);
+            var clue_content = JSON.parse(document.getElementById('clues').textContent);
+            let single_cats = clue_content.single.categories;
+            console.log(window.location.host);
+            console.log(season_num);
+            console.log(show_num);
+            console.log(single_cats);
+            html = `
+            {% load static %}
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+            <div class="board">
+                
+    <table class="board_table">
+        <tr>
+          <th id="categories" class="category1"><a class="categories" onclick="cat(1)">cats</a></th> <!-- I may want a function to auto change font size based on num of chars if i can. but not strictly necessary.-->
+          <th id="categories" class="category2"><a class="categories" onclick="cat(2)">cats</a></th>
+          <th id="categories" class="category3"><a class="categories" onclick="cat(3)">cats</a></th>
+          <th id="categories" class="category4"><a class="categories" onclick="cat(4)">cats</a></th>
+          <th id="categories" class="category5"><a class="categories" onclick="cat(5)">cats</a></th>
+          <th id="categories" class="category6"><a class="categories" onclick="cat(6)">cats</a></th>
+        </tr>
+        <tr>
+          <td><a class="c1" onclick="select(1)">$200</a></td>
+          <td><a class="c2" onclick="select(2)">$200</a></td>
+          <td><a class="c3" onclick="select(3)">$200</a></td>
+          <td><a class="c4" onclick="select(4)">$200</a></td>
+          <td><a class="c5" onclick="select(5)">$200</a></td>
+          <td><a class="c6" onclick="select(6)">$200</a></td>
+        </tr>
+        <tr>
+          <td><a class="c7" onclick="select(7)">$400</a></td>
+          <td><a class="c8" onclick="select(8)">$400</a></td>
+          <td><a class="c9" onclick="select(9)">$400</a></td>
+          <td><a class="c10" onclick="select(10)">$400</a></td>
+          <td><a class="c11" onclick="select(11)">$400</a></td>
+          <td><a class="c12" onclick="select(12)">$400</a></td>
+        </tr>
+        <tr>
+            <td><a class="c13" onclick="select(13)">$600</a></td>
+            <td><a class="c14" onclick="select(14)">$600</a></td>
+            <td><a class="c15" onclick="select(15)">$600</a></td>
+            <td><a class="c16" onclick="select(16)">$600</a></td>
+            <td><a class="c17" onclick="select(17)">$600</a></td>
+            <td><a class="c18" onclick="select(18)">$600</a></td>
+          </tr>
+          <tr>
+            <td><a class="c19" onclick="select(19)">$800</a></td>
+            <td><a class="c20" onclick="select(20)">$800</a></td>
+            <td><a class="c21" onclick="select(21)">$800</a></td>
+            <td><a class="c22" onclick="select(22)">$800</a></td>
+            <td><a class="c23" onclick="select(23)">$800</a></td>
+            <td><a class="c24" onclick="select(24)">$800</a></td>
+          </tr>
+          <tr>
+            <td><a class="c25" onclick="select(25)">$1000</a></td>
+            <td><a class="c26" onclick="select(26)">$1000</a></td>
+            <td><a class="c27" onclick="select(27)">$1000</a></td>
+            <td><a class="c28" onclick="select(28)">$1000</a></td>
+            <td><a class="c29" onclick="select(29)">$1000</a></td>
+            <td><a class="c30" onclick="select(30)">$1000</a></td>
+          </tr>
+      </table>
+    </div>
+      
+    <!-- Clue box -->
+    <div class="box_clues">
+      <table class="clue_box">
+        <tr>
+            <th class="cat_val">CATEGORY_VAL</th>
+            <th class="val_val">VALUE($)</th>
+            <th><button class="finished_reading" onclick="read()">FINISHED READING</button></th>
+        </tr>
+        <tr>
+            <td class="clue_read" colspan="3">CLUE DATA</td>
+        </tr>
+        <tr>
+            <td class="answer_read" colspan="3">ANSWER DATA</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Player scores/info -->
+    <div class="player_info">
+        <table class="player_box">
+            <tr>
+                <td class="player1">Player1-(name)</td>
+            </tr>
+            <tr>
+                <td class="player1_score">SCORE: $9999</td>
+            </tr>
+            <tr>
+                <td class="player2">Player2-(name)</td>
+            </tr>
+            <tr>
+                <td class="player2_score">SCORE: $999999</td>
+            </tr>
+            <tr>
+                <td class="player3">Player3-(name)</td>
+                </tr>
+                <tr>
+                <td class="player3_score">SCORE: $130,225</td>
+            </tr>
+        </table>
+    </div>
+    <!-- Player buzzed box -->
+
+    <div class="player_buzzed_box">
+        <table>
+            <tr>
+                <td class="pl1">Player1-(name)</td>
+                <td class="pl2">Player2-(name)</td>
+                <td class="pl3">Player3-(name)</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Correct/Incorrect box -->
+<div class="selection_box">
+    <table>
+        <tr>
+            <td><button onclick="answer(1)">CORRECT</button></td>
+            <td><button onclick="answer(0)">INCORRECT</button></td>
+            
+        </tr>
+    </table>
+</div>
+    <!-- Daliy double Wager box+js-calculator -->
+<div class="wager_calculator">
+    <h1>Daily Double Calculator</h1>
+    <table class="wager">
+        <tr>
+            <td><input class="wager_input" type="text" max-length="6"> </td>
+        </tr>
+        <tr>
+            <td><button onclick=dd_submit()>CONFIRM</button></td>
+        </tr>
+    </table>
+    <button onclick=dd_correct()>CORRECT</button>
+    <button onclick=dd_incorrect()>INCORRECT</button>
+    <table class="checkers">
+
+    </table>
+</div>
+    
+<button class="next_clue" onclick="next_clue()">NEXT CLUE</button>
+<button class="single_J" onclick="single_J()">SINGLE JEOPARDY</button>
+<button class="double_J" onclick="double_J()">DOUBLE JEOPARDY</button>
+<button class="final_J" onclick="final_J()">FINAL JEOPARDY</button>
+<textarea class="current_game"></textarea>
+<textarea class="buzz_bool"></textarea>
+<div> <p class="buzzed_box">CURRENTTEST</p></div>
+<div class="dd_wager">testing</div>
+<button onclick="show_final_clue()" class="show_final">SHOW FINAL CLUE</button>
+<button onclick="read_final()" class="read_final">READ_FINAL</button>
+<input class="playernum_fix" type="text"></input>
+<input class="new_score" type="text"></input>
+<button onclick="change_score()">Change Score</button>
+<p class="curr_player"></p>
+<button onclick=newv(1)>1</button>
+<button onclick=newv(2)>2</button>
+<button onclick=newv(3)>3</button>
+<p class="curr_clue"></p>
+
+
+
+`
+       
+            $(document.body).empty();
+            $(document.body).append(html);
+            document.querySelector('.buzz_bool').value = 'true';
+}
+
+
+
+        if (type == "player"){
+        const player_name = JSON.parse(document.getElementById('player_name').textContent);
+        const player_num = JSON.parse(document.getElementById('player_num').textContent);
+
+            console.log(player_name);
+            console.log(player_num);
+            // obviously i will improve the function and the look of button.
+            // i need the function to send the message of the player num and perhaps
+            // player name as well. and that will set off the chain of events for a buzz-in.
+            html = `{% load static %}
+            <link rel="stylesheet" href="{% static 'player.css' %}">
+            <button class="buzz_button" onclick="buzz()">BUZZ!</button>
+                    <div class="player_ready"><button onclick="player_ready()">Ready?</button></div>
+                    <input class="final_wager" type="text" max-length="6">
+                    <button class="submit_final_wager" onclick=final_wager()>testing</button>`
+
+            $(document.body).empty();
+            $(document.body).append(html);
+    }
+
+
+        if (type == "board"){
+            var clue_content = JSON.parse(document.getElementById('clues').textContent);
+            console.log("looking");
+            html = `{% load static %}
+            <link rel="stylesheet" href="{% static 'board_style.css' %}">
+            <div class="board">
+        <table class="board_table">
+            <tr>
+              <td id="header1" class="header">CATEGORY1</td > 
+              <td id="header2" class="header">CATEGORY2</td >
+              <td id="header3" class="header">CATEGORY3</td >
+              <td id="header4" class="header">CATEGORY4</td >
+              <td id="header5" class="header">CATEGORY5</td >
+              <td id="header6" class="header">CATEGORY6</td >
+            </tr>
+            <tr>
+              <td id="unit" class="unit1">$200</td>
+              <td id="unit" class="unit2">$200</td>
+              <td id="unit" class="unit3">$200</td>
+              <td id="unit" class="unit4">$200</td>
+              <td id="unit" class="unit5">$200</td>
+              <td id="unit" class="unit6">$200</td>
+            </tr>
+            <tr>
+              <td id="unit" class="unit7">$400</td>
+              <td id="unit" class="unit8">$400</td>
+              <td id="unit" class="unit9">$400</td>
+              <td id="unit" class="unit10">$400</td>
+              <td id="unit" class="unit11">$400</td>
+              <td id="unit" class="unit12">$400</td>
+            </tr>
+            <tr>
+                <td id="unit" class="unit13">$600</td>
+                <td id="unit" class="unit14">$600</td>
+                <td id="unit" class="unit15">$600</td>
+                <td id="unit" class="unit16">$600</td>
+                <td id="unit" class="unit17">$600</td>
+                <td id="unit" class="unit18">$600</td>
+              </tr>
+              <tr>
+                <td id="unit" class="unit19">$800</td>
+                <td id="unit" class="unit20">$800</td>
+                <td id="unit" class="unit21">$800</td>
+                <td id="unit" class="unit22">$800</td>
+                <td id="unit" class="unit23">$800</td>
+                <td id="unit" class="unit24">$800</td>
+              </tr>
+              <tr>
+                <td id="unit" class="unit25">$1000</td>
+                <td id="unit" class="unit26">$1000</td>
+                <td id="unit" class="unit27">$1000</td>
+                <td id="unit" class="unit28">$1000</td>
+                <td id="unit" class="unit29">$1000</td>
+                <td id="unit" class="unit30">$1000</td>
+              </tr>
+              <style> .header {
+                background-image: {% load static %} url({% static 'blank_blue_jeopardy.png' %});
+                background-size: cover;
+                background-repeat: no-repeat;
+              }
+              #unit {
+                background-image: {% load static %} url({% static 'blank_blue_jeopardy.png' %});
+                background-size: cover;
+                background-repeat: no-repeat;
+              }
+              </style>
+          </table>
+        </div>
+        <div class="player_stuff">
+            <table>
+            <tr>
+                <td id="player_name1">TEST1</td>
+                <td id="player_name2">TEST2</td>
+                <td id="player_name3">TEST3</td>
+            </tr>
+            <tr>
+                <td id="player_score1">score1</td>
+                <td id="player_score2">score2</td>
+                <td id="player_score3">score3</td>
+            </tr>
+        </table>
+        </div>`
+
+        $(document.body).empty();
+        $(document.body).append(html);
+        console.log("board loaded.");
+        }
+        
+
+        
+        function buzz(){
+            $(document.body).css("background","red");
+            const message = {
+                "type": "buzz",
+                "player_name": player_name,
+                "player_num": player_num,
+
+            }
+
+            if (document.querySelector(".buzz_button").textContent == "BUZZ!"){
+            chatSocket.send(JSON.stringify({"message":message}));
+            }
+
+
+            
+            console.log("buzz");
+            
+            if (document.querySelector(".buzz_button").textContent == "BUZZ!"){
+                val = window.setTimeout(buzzed,3000); //can_buzz val. either "false"or"true"
+            }
+            
+            document.querySelector(".buzz_button").textContent = "buzzed";
+            
+        }
+
+        function buzzed(){
+            $(document.body).css("background","orange");
+            document.querySelector(".buzz_button").textContent = "BUZZ!";
+            return "true";
+        }
+
+        function dd_submit(){
+            let wager = document.querySelector(".wager_input").value; //players bet on daily double.
+            $(document.querySelector(".dd_wager")).empty();
+            $(document.querySelector(".dd_wager")).append(wager);
+            curr = document.querySelector(".current_game").value;
+            let curr_clue_val = document.querySelector(".curr_clue").textContent;
+            content = {
+                "type": "clue_for_board",
+                "game": curr,
+                "clue_num": curr_clue_val,
+                "dd": "no",
+                
+            }
+
+            chatSocket.send(JSON.stringify({"message":content}));
+
+
+        }
+
+        function dd_correct(){
+            player_num_player = document.querySelector(".curr_player").textContent; //player who chose clue.
+            curr_score = parseInt($(document.querySelector(".player" + player_num_player + "_score")).text(),10);
+            new_score = curr_score + parseInt($(document.querySelector(".dd_wager")).text(),10);
+            $(document.querySelector(".player" + player_num_player + "_score")).empty();
+            $(document.querySelector(".player" + player_num_player + "_score")).append(new_score);
+        }
+
+        function dd_incorrect(){
+            player_num_player = document.querySelector(".curr_player").textContent;
+            curr_score = parseInt($(document.querySelector(".player" + player_num_player + "_score")).text(),10);
+            new_score = curr_score - parseInt($(document.querySelector(".dd_wager")).text(),10);
+            $(document.querySelector(".player" + player_num_player + "_score")).empty();
+            $(document.querySelector(".player" + player_num_player + "_score")).append(new_score);
+        }
+
+        function newv(pl_num){
+            $(document.querySelector(".curr_player")).empty();
+            $(document.querySelector(".curr_player")).append(pl_num);
+            $(document.querySelector(".player1")).css("background-color","blue");
+            $(document.querySelector(".player2")).css("background-color","blue");
+            $(document.querySelector(".player3")).css("background-color","blue");
+
+            $(document.querySelector(".player" + pl_num)).css("background-color","red");
+
+        }
+
+
+
+        function select(i){
+            console.log("running");
+            curr = document.querySelector(".current_game").value;
+            double_poss_single = parseInt($(document.querySelector(".daily_double_loc_single")).text(),10);
+            console.log(curr);
+            let _value = document.querySelector(".c" + i).textContent;
+            let dd = "no";
+            
+            // i will need if statement that will figure out if its single or double
+            // basically ill have a button on host and onclick itll set type_game to double, final, single etc.
+            if (curr == "single"){
+            //     if (i == double_poss_single){
+            //     $(document.querySelector(".clue_read")).empty();
+            //     $(document.querySelector(".clue_read")).append(clue_content.single.clues[i]);
+            //     $(document.querySelector(".answer_read")).empty();
+            //     $(document.querySelector(".answer_read")).append(clue_content.single.answers[i]);
+            //     $(document.querySelector(".cat_val")).empty();
+            //     $(document.querySelector(".cat_val")).append(clue_content.single.categories[i - (6*Math.floor(i/6))]);
+            //     // i need to call function with player num
+            //     player_curr_num = parseInt($(document.querySelector(".buzzed_box")).text(),10);
+            //     daily_double(player_curr_num);
+            // }
+                if (_value == "DD"){
+                    $(document.querySelector(".clue_read")).empty();
+                    $(document.querySelector(".clue_read")).append(clue_content.single.clues[i]);
+                    $(document.querySelector(".answer_read")).empty();
+                    $(document.querySelector(".answer_read")).append(clue_content.single.answers[i]);
+                    $(document.querySelector(".cat_val")).empty();
+                    $(document.querySelector(".cat_val")).append(clue_content.single.categories[i - (6*Math.floor(i/6))]);
+                    $(document.querySelector(".val_val")).empty();
+                    $(document.querySelector(".val_val")).append(_value);
+                    dd = "yes";
+                }
+                else {
+                    $(document.querySelector(".clue_read")).empty();
+                    $(document.querySelector(".clue_read")).append(clue_content.single.clues[i]);
+                    $(document.querySelector(".answer_read")).empty();
+                    $(document.querySelector(".answer_read")).append(clue_content.single.answers[i]);
+                    $(document.querySelector(".cat_val")).empty();
+                    $(document.querySelector(".cat_val")).append(clue_content.single.categories[i - (6*Math.floor(i/6))]);
+                    $(document.querySelector(".val_val")).empty();
+                    clue_val_val = $(".c" + i).text();
+                    $(document.querySelector(".val_val")).append(clue_val_val);
+                }
+            }
+            else if (curr == "double"){
+                if (_value == "DD"){
+                    $(document.querySelector(".clue_read")).empty();
+                    $(document.querySelector(".clue_read")).append(clue_content.double.clues[i]);
+                    $(document.querySelector(".answer_read")).empty();
+                    $(document.querySelector(".answer_read")).append(clue_content.double.answers[i]);
+                    $(document.querySelector(".cat_val")).empty();
+                    $(document.querySelector(".cat_val")).append(clue_content.double.categories[i - (6*Math.floor(i/6))]);
+                    $(document.querySelector(".val_val")).empty();
+                    $(document.querySelector(".val_val")).append(_value);
+                    dd = "yes";
+                }
+
+                else {
+                $(document.querySelector(".clue_read")).empty();
+                $(document.querySelector(".clue_read")).append(clue_content.double.clues[i]);
+                $(document.querySelector(".answer_read")).empty();
+                $(document.querySelector(".answer_read")).append(clue_content.double.answers[i]);
+                $(document.querySelector(".cat_val")).empty();
+                $(document.querySelector(".cat_val")).append(clue_content.double.categories[i - (6*Math.floor(i/6))]);
+                $(document.querySelector(".val_val")).empty();
+                clue_val_val = $(".c" + i).text();
+                $(document.querySelector(".val_val")).append(clue_val_val);
+                }
+            }
+            
+            let clue_box = ".c" + i;
+            console.log(clue_box);
+            // set number to empty once clicked.
+            $(document.querySelector(clue_box)).empty();
+            // $(document.querySelector(clue_box)).append();
+            console.log(clue_content.single.clues[i]);
+
+            // need to send clue data to board. when to send single/double/final to board.
+            message = {
+                "type": "clue_for_board",
+                "game": curr,
+                "clue_num": i,
+                "dd": dd,
+            }
+            chatSocket.send(JSON.stringify({"message":message}));
+
+            $(document.querySelector(".curr_clue")).empty();
+            $(document.querySelector(".curr_clue")).append(i);
+        }
+
+        function change_score(){
+            let player_curr_num = document.querySelector(".playernum_fix").value;
+            class_grab_val = ".player" + player_curr_num + "_score";
+            let new_score = document.querySelector(".new_score").value;
+            $(document.querySelector(class_grab_val)).empty();
+            $(document.querySelector(class_grab_val)).append(new_score);
+
+            
+        }
+
+        function read(){
+            console.log("finished reading.");
+            document.querySelector(".buzz_bool").value = "false";
+            content = {
+                "type": "read",
+                "finished": "yes",
+            };
+            //send data to board.html
+            chatSocket.send(JSON.stringify({"message":content}))
+        }
+
+        function player_ready(){
+            console.log("testing player ready");
+            $(document.querySelector(".player_ready")).empty()
+
+            const message = {
+                "type": "ready",
+                "player_num": player_num,
+                "player_name": player_name}
+
+            chatSocket.send(JSON.stringify({"message":message}));
+        }
+
+        function single_J(){
+            for (let i = 1; i <= 30; i++){
+                let clue_box = ".c" + i;
+                // document.querySelector(clue_box).value *= 2;
+                let curr_game = "single";
+                $(document.querySelector(".current_game")).empty();
+                $(document.querySelector(".current_game")).append(curr_game);
+            }
+            for (let num = 1; num <= 6; num++){
+                let l = ".category" + num;
+            $(document.querySelector(l)).empty();
+            $(document.querySelector(l)).append(clue_content.single.categories[num-1]);
+
+
+            
+            // send that it is single jeopardy to board ie chatSocket(json...{type:"single_for_board"}) same for double
+            // need to random pick val for daily double then store that somewhere i guess?
+            content = {
+                "type": "single",
+            }
+            chatSocket.send(JSON.stringify({"message":content}));
+            }
+            let daily_double = Math.floor(Math.random()*30) + 1;
+            $(document.querySelector(".c" + daily_double)).empty();
+            $(document.querySelector(".c" + daily_double)).append("DD");
+            $(document.querySelector(".curr_player")).empty();
+            $(document.querySelector(".curr_player")).append("1");
+        }
+        
+        function double_J(){
+            const vals = [200,400,600,800,1000];
+            for (let i = 1; i <= 30; i++){
+                let clue_box = ".c" + i;
+                
+                $(document.querySelector(clue_box)).empty();
+                $(document.querySelector(clue_box)).append("$" + (200 * (Math.floor((i-1)/6) + 1)*2));
+            }
+                let curr_game = "double";
+                $(document.querySelector(".current_game")).empty();
+                $(document.querySelector(".current_game")).append(curr_game);
+                
+                for (let num = 1; num <= 6; num++){
+                    let l = ".category" + num;
+            $(document.querySelector(l)).empty();
+            $(document.querySelector(l)).append(clue_content.double.categories[num]);
+            }
+            //i need to update board to have double jeoprdy vals and this actually needs to go in onmessage and send content from here but ill write the code here for now.
+            content = {
+                "type": "double",
+            }
+            chatSocket.send(JSON.stringify({"message":content}));
+
+            let daily_double1 = Math.floor(Math.random()*6) + 1;
+            let daily_double2 = Math.floor(Math.random()*6) + 1;
+            let val = true;
+            while (val){
+            let daily_double1 = Math.floor(Math.random()*6) + 1;
+            let daily_double2 = Math.floor(Math.random()*6) + 1;
+            if (daily_double1 != daily_double2){
+                val = false;
+                let d1_val = Math.floor(Math.random()*5) + 1;
+                let d2_val = Math.floor(Math.random()*5) + 1;
+
+                d1 = (daily_double1 * d1_val)
+                d2 = (daily_double2 * d2_val)
+                
+                $(document.querySelector(".c" + d1)).empty();
+                $(document.querySelector(".c" + d1)).append("DD");
+                $(document.querySelector(".c" + d2)).empty();
+                $(document.querySelector(".c" + d2)).append("DD");
+            }
+        }
+            
+
+            
+        }
+
+        function final_J(){
+            console.log("i at least ran");
+            //set timeout thing ie (window.setTimeout(function, milliseconds);)
+            $(document.querySelector(".cat_val")).empty();
+            $(document.querySelector(".cat_val")).append(clue_content.final["category"]);
+            $(document.querySelector(".clue_read")).empty();
+            $(document.querySelector(".clue_read")).append(clue_content.final["clue"]);
+            $(document.querySelector(".answer_read")).empty();
+            $(document.querySelector(".answer_read")).append(clue_content.final["answer"]);
+            let curr_game = "final";
+            $(document.querySelector(".current_game")).empty();
+            $(document.querySelector(".current_game")).append(curr_game);
+            //player1 
+            wager_hold = document.createElement("h1");
+            wager_hold.classList.add("wager1");
+            empty = document.createTextNode("1");
+            wager_hold.appendChild(empty);
+            //player2
+            wager_hold2 = document.createElement("h1");
+            wager_hold2.classList.add("wager2");
+            empty = document.createTextNode("2");
+            wager_hold2.appendChild(empty);
+            //player3
+            wager_hold3 = document.createElement("h1");
+            wager_hold3.classList.add("wager3");
+            empty = document.createTextNode("3");
+            wager_hold3.appendChild(empty);
+            
+            document.body.appendChild(wager_hold);
+            document.body.appendChild(wager_hold2);
+            document.body.appendChild(wager_hold3);
+
+            
+            content = {
+                "type": "final",
+            }
+
+            chatSocket.send(JSON.stringify({"message":content}));
+        }
+        
+        function show_final_clue(){
+            content = {
+                "type": "final_clue",
+            }
+            chatSocket.send(JSON.stringify({"message":content}));
+        }
+
+        function read_final(){
+            content = {
+                "type": "read",
+                "final_start": "yes"
+            }
+            window.setTimeout(grab_answer(), 35000);
+            chatSocket.send(JSON.stringify({"message":content}));
+        }
+
+        function grab_answer(){
+            // get the users input in their boxes which will be inputted then do stuff.
+        }
+        function next_clue(){
+            finished_clues = [];
+            curr_game = document.querySelector(".current_game").value;
+            console.log("right here");
+            console.log(curr_game);
+            for (let i = 1; i <= 30; i++){
+                let clue_box = ".c" + i;
+                // console.log(document.querySelector(clue_box).value);
+                if ($(clue_box).text() == ""){
+                    finished_clues.push(i.toString());
+                }
+            } // will need to also send player scores here
+            
+            player1_score = parseInt($(document.querySelector(".player1_score")).text(),10); // integer of their current score
+            player1_name = $(document.querySelector(".player1")).text();
+            player2_score = parseInt($(document.querySelector(".player2_score")).text(),10); // integer of their current score
+            player2_name = $(document.querySelector(".player2")).text();
+            player3_score = parseInt($(document.querySelector(".player3_score")).text(),10); // integer of their current score
+            player3_name = $(document.querySelector(".player3")).text();
+            content = {
+                "type": "return_to_board",
+                "game": curr_game,
+                "player1_name": player1_name,
+                "player2_name": player2_name,
+                "player3_name": player3_name,
+                "player1_score": player1_score,
+                "player2_score": player2_score,
+                "player3_score": player3_score,
+                "clues_revealed": finished_clues,
+            }
+            $(document.querySelector(".buzzed_box")).empty();
+            document.querySelector('.buzz_bool').value = 'true';
+            chatSocket.send(JSON.stringify({"message":content}));
+
+            $(document.querySelector(".pl1")).css("background-color","lightgray");
+            $(document.querySelector(".pl2")).css("background-color","lightgray");
+            $(document.querySelector(".pl3")).css("background-color","lightgray");
+            
+
+        }
+
+        function answer(val){ //val == 0 for wrong, 1 for right
+            // use  doc.queSel().text() to get current value then add necessary value from either clue_num using clever math or grabbing from html via
+            // doc.queSel().text().strip("$").toInt() += player_score| thus hopefully i can do that. that's essentially all that needs to be done. i think. hopefully.\
+            if (type == "host"){
+
+                value_clue = parseInt($(".val_val").text().substring(1),10);
+                if (!value_clue){
+                    console.log("null value");
+                        value_clue = 0;
+                        console.log("null");
+                    }
+                
+                player_curr_num = $(document.querySelector(".buzzed_box")).text(); //num player ie 1,2,3. of player that answered.
+                class_grab_val = ".player" + player_curr_num + "_score";
+                class_grab_player = ".player" + player_curr_num;
+                curr_player_score = parseInt($(document.querySelector(class_grab_val)).text(),10); // integer of their current score
+
+                if (val == "0"){
+                    new_score = curr_player_score - value_clue;
+                    content = {
+                    "type": "give_red",
+                }
+                    document.querySelector(".buzz_bool").value = "false";
+                }
+                if (val == "1"){
+                    console.log("got here22");
+                    new_score = curr_player_score + value_clue;
+                    document.querySelector(".buzz_bool").value = "true";
+
+                    $(document.querySelector(".player1")).css("background-color","blue");
+                    $(document.querySelector(".player2")).css("background-color","blue");
+                    $(document.querySelector(".player3")).css("background-color","blue");
+
+                    $(document.querySelector(class_grab_player)).css("background-color","red");
+                    $(document.querySelector(".curr_player")).empty();
+                    $(document.querySelector(".curr_player")).append(player_curr_num);
+                    content = {
+                        "type": "none",
+                    }
+                }
+
+                class_val = ".pl" + player_curr_num;
+                $(document.querySelector(class_grab_val)).empty();
+                $(document.querySelector(class_grab_val)).append(new_score);
+                $(document.querySelector(".buzzed_box")).empty();
+                $(document.querySelector(class_val)).css("background-color","lightgray");
+                
+
+                
+
+
+
+                chatSocket.send(JSON.stringify({"message":content}));
+        }
+    }
+
+
+    function random_daily(){
+        Math.floor(Math.random() * 30) + 1; // gives random number between one and 30.
+        $(document.querySelector(".daily_double_loc_single")).empty();
+        $(document.querySelector(".daily_double_loc_single")).append();
+
+    }
+
+    function daily_double(player_num){
+        wager = parseInt(document.querySelector(".wager_input"),10);
+
+    }
+
+
+    function final_wager(){
+        // i have player_num and player_name vars already
+        let wager = parseInt(document.querySelector(".final_wager").value,10);
+        console.log(wager);
+        document.querySelector(".final_wager").remove();
+        document.querySelector(".submit_final_wager").remove();
+        
+        console.log(player_num);
+        content = {
+            "type": "final_wager",
+            "player_num": player_num,
+            "player_name": player_name,
+            "wager": wager,
+        }
+
+        chatSocket.send(JSON.stringify({"message":content}));
+    }
+
+
+    
+    </script>
+    
+</body>
+</html>

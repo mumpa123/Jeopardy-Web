@@ -1,0 +1,140 @@
+<!-- chat/templates/chat/room.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>template_to_learn_websocket_and_build_jeopardy</title>
+    <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js"></script>
+</head>
+<body>
+
+
+
+
+    <textarea id="chat-log" cols="100" rows="20"></textarea><br>
+    <input id="chat-message-input" type="text" size="100"><br>
+    <input id="chat-message-submit" type="button" value="Send">
+    {{ tempvar|json_script:"csv_data" }}
+    {{ room_name|json_script:"room-name"}}
+    <script>
+        let host = `<div class="board">
+    <table class="board_table">
+        <tr>
+          <th class="category"><a onclick="cat(1)">CATEGORY1</a></th> <!-- I may want a function to auto change font size based on num of chars if i can. but not strictly necessary.-->
+          <th class="category"><a onclick="cat(2)">CATEGORY2</a></th>
+          <th class="category"><a onclick="cat(3)">CATEGORY3</a></th>
+          <th class="category"><a onclick="cat(4)">CATEGORY4</a></th>
+          <th class="category"><a onclick="cat(5)">CATEGORY5</a></th>
+          <th class="category"><a onclick="cat(6)">CATEGORY6</a></th>
+        </tr>
+        <tr>
+          <td><a onclick="select(1)">$200</a></td>
+          <td><a onclick="select(2)">$200</a></td>
+          <td><a onclick="select(3)">$200</a></td>
+          <td><a onclick="select(4)">$200</a></td>
+          <td><a onclick="select(5)">$200</a></td>
+          <td><a onclick="select(6)">$200</a></td>
+        </tr>
+        <tr>
+          <td><a onclick="select(7)">$400</a></td>
+          <td><a onclick="select(8)">$400</a></td>
+          <td><a onclick="select(9)">$400</a></td>
+          <td><a onclick="select(10)">$400</a></td>
+          <td><a onclick="select(11)">$400</a></td>
+          <td><a onclick="select(12)">$400</a></td>
+        </tr>
+        <tr>
+            <td><a onclick="select(13)">$600</a></td>
+            <td><a onclick="select(14)">$600</a></td>
+            <td><a onclick="select(15)">$600</a></td>
+            <td><a onclick="select(16)">$600</a></td>
+            <td><a onclick="select(17)">$600</a></td>
+            <td><a onclick="select(18)">$600</a></td>
+          </tr>
+          <tr>
+            <td><a onclick="select(19)">$800</a></td>
+            <td><a onclick="select(20)">$800</a></td>
+            <td><a onclick="select(21)">$800</a></td>
+            <td><a onclick="select(22)">$800</a></td>
+            <td><a onclick="select(23)">$800</a></td>
+            <td><a onclick="select(24)">$800</a></td>
+          </tr>
+          <tr>
+            <td><a onclick="select(25)">$1000</a></td>
+            <td><a onclick="select(26)">$1000</a></td>
+            <td><a onclick="select(27)">$1000</a></td>
+            <td><a onclick="select(28)">$1000</a></td>
+            <td><a onclick="select(29)">$1000</a></td>
+            <td><a onclick="select(30)">$1000</a></td>
+          </tr>
+      </table>
+    </div>`
+
+        const data_test = JSON.parse(document.getElementById('csv_data').textContent); 
+        const roomName = JSON.parse(document.getElementById('room-name').textContent);
+        const chatSocket = new WebSocket(
+            'ws://'
+            + window.location.host
+            + '/ws/chat/'
+            + roomName
+            + '/'
+        );
+
+        chatSocket.onmessage = function(e) { 
+            const data = JSON.parse(e.data); //since it sends a json i can just grab anything i need and itll be there depending perfect
+            document.querySelector('#chat-log').value += (data.message + '\n'); //here is where it actually updates the html. thus what i'll have is onmessage on the host page.
+            // i'll set buzzed_flag = True and i'll store the player username from message into variable buzzed_player or something then i can have on board onmessage have a player light up
+            // screen based on it. then all functions will affect the player object from the host based on correct and incorrect answers.
+
+            let flag_buzzed = true;
+
+
+
+        };
+
+        chatSocket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly');
+        };
+
+        document.querySelector('#chat-message-input').focus(); //what is .focus() what is querySelector()
+        document.querySelector('#chat-message-input').onkeyup = function(e) {
+            if (e.keyCode === 13) {  // enter, return
+                document.querySelector('#chat-message-submit').click();
+            }
+        };
+
+        document.querySelector('#chat-message-submit').onclick = function(e) {
+            const messageInputDom = document.querySelector('#chat-message-input');
+            const message = messageInputDom.value;
+            chatSocket.send(JSON.stringify({ //essentially i need to instead of sending a message i need to send the players username. ill grab that from database?
+                'message': message,
+                'player_num': player_num, //if player-num != 0: then do player stuff (1,2,3) ie player1, player2... and if flag_buzzed is not already true
+                'ans_correct': ans_correct, //boolean true if answer correct, false if incorrect '' if not applicable thus if ans_correct != '' do score stuff
+                'clue_num': clue_num, // row and col of clue. if !=0 update board and show clue
+
+            }));
+            messageInputDom.value = '';
+        };
+
+
+    </script>
+    <table>
+        <tr>
+            <td id="cell1"></td>
+            <td id="cell2"></td>
+        </tr>
+    </table>
+    <script>
+        $('#cell1').append(data_test["2"]);
+    </script>
+    <style>
+        table {
+            border: solid 2px red;
+            width: 100px;
+        }
+        td {
+            border: solid 2px red;
+        }
+    </style>
+</body>
+</html>
