@@ -1,0 +1,102 @@
+.buzzer-queue {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.buzzer-queue.empty {
+  text-align: center;
+}
+
+.buzzer-queue h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.queue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.clear-button {
+  padding: 0.5rem 1rem;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.clear-button:hover {
+  background: #c0392b;
+}
+
+.no-buzzes {
+  color: #999;
+  font-style: italic;
+  padding: 2rem 0;
+}
+
+.queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.queue-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 4px solid;
+  transition: all 0.2s;
+}
+
+.queue-item.first {
+  background: #fff3cd;
+  border-left-width: 6px;
+}
+
+.queue-position {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #666;
+  min-width: 30px;
+  text-align: center;
+}
+
+.queue-item.first .queue-position {
+  color: #ffd700;
+}
+
+.queue-player {
+  flex: 1;
+}
+
+.player-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.player-number {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.winner-badge {
+  background: #ffd700;
+  color: #333;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}

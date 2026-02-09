@@ -1,0 +1,219 @@
+@font-face {
+  font-family: 'ITC_Korinna';
+  src: url('/fonts/korinna-bold-webfont.woff2') format('woff2'),
+       url('/fonts/korinna-bold-webfont.woff') format('woff');
+  font-weight: bold;
+  font-style: normal;
+}
+
+.clue-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.clue-modal {
+  background-image: url('/blank_blue_jeopardy.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: scale(0.9);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.clue-modal.buzzer-active {
+  outline: 12px solid #ff0000;
+  outline-offset: -12px;
+  box-shadow: inset 0 0 50px rgba(255, 0, 0, 0.8), 0 0 50px rgba(255, 0, 0, 0.8);
+  animation: slideIn 0.3s ease, modalBuzzerPulse 1s ease-in-out infinite;
+}
+
+.clue-modal.buzz-won {
+  outline: 12px solid #00ff00;
+  outline-offset: -12px;
+  box-shadow: inset 0 0 50px rgba(0, 255, 0, 0.8), 0 0 50px rgba(0, 255, 0, 0.8);
+  animation: slideIn 0.3s ease, modalBuzzWonPulse 1s ease-in-out infinite;
+}
+
+@keyframes modalBuzzerPulse {
+  0%, 100% {
+    outline-color: #ff0000;
+    box-shadow: inset 0 0 50px rgba(255, 0, 0, 0.8), 0 0 50px rgba(255, 0, 0, 0.8);
+  }
+  50% {
+    outline-color: #ff4444;
+    box-shadow: inset 0 0 60px rgba(255, 0, 0, 1), 0 0 60px rgba(255, 0, 0, 1);
+  }
+}
+
+@keyframes modalBuzzWonPulse {
+  0%, 100% {
+    outline-color: #00ff00;
+    box-shadow: inset 0 0 50px rgba(0, 255, 0, 0.8), 0 0 50px rgba(0, 255, 0, 0.8);
+  }
+  50% {
+    outline-color: #44ff44;
+    box-shadow: inset 0 0 60px rgba(0, 255, 0, 1), 0 0 60px rgba(0, 255, 0, 1);
+  }
+}
+
+.clue-value-header {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  background: rgba(255, 215, 0, 0.2);
+  color: #ffd700;
+  font-size: 2.55rem;
+  font-weight: bold;
+  text-align: center;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  border: 3px solid rgba(255, 215, 0, 0.5);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+.clue-content {
+  flex: 1;
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.clue-question {
+  color: white;
+  font-size: 6rem;
+  text-align: center;
+  font-family: 'ITC_Korinna', 'Korinna', 'Century Schoolbook', 'Georgia', serif;
+  text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.7);
+  line-height: 1.3;
+  margin-bottom: 2rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  max-width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.clue-answer {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid rgba(255, 255, 255, 0.3);
+  text-align: center;
+  width: 100%;
+}
+
+.answer-label {
+  color: #ffd700;
+  font-size: 2.1rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+.answer-text {
+  color: white;
+  font-size: 4.25rem;
+  font-style: italic;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+  text-transform: uppercase;
+  font-family: 'ITC_Korinna', 'Korinna', 'Century Schoolbook', 'Georgia', serif;
+  font-weight: bold;
+  max-width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.daily-double-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #e74c3c;
+  color: white;
+  font-size: 3.4rem;
+  font-weight: bold;
+  padding: 2rem 4rem;
+  border-radius: 12px;
+  border: 4px solid white;
+  box-shadow: 0 0 30px rgba(231, 76, 60, 0.8);
+  animation: pulse 1s infinite;
+  pointer-events: none;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .clue-value-header {
+    font-size: 1.7rem;
+    padding: 0.75rem 1.5rem;
+    top: 1rem;
+    right: 1rem;
+  }
+
+  .clue-question {
+    font-size: 3.4rem;
+    padding: 1.5rem;
+    max-width: 90%;
+  }
+
+  .answer-label {
+    font-size: 1.7rem;
+  }
+
+  .answer-text {
+    font-size: 2.55rem;
+    max-width: 90%;
+  }
+
+  .daily-double-indicator {
+    font-size: 2.1rem;
+    padding: 1rem 2rem;
+  }
+}
