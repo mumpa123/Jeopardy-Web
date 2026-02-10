@@ -30,12 +30,14 @@ export function Board({
   // Calculate font size based on text length
   const getCategoryFontSize = (text: string): string => {
     const length = text.length;
-    if (length <= 8) return '2.75rem';
-    if (length <= 12) return '2.2rem';
-    if (length <= 16) return '1.8rem';
-    if (length <= 20) return '1.5rem';
-    if (length <= 25) return '1.3rem';
-    return '1.1rem';
+    if (length <= 8) return '2.5rem';
+    if (length <= 12) return '2.0rem';
+    if (length <= 16) return '1.6rem';
+    if (length <= 20) return '1.3rem';
+    if (length <= 25) return '1.1rem';
+    if (length <= 30) return '0.95rem';
+    if (length <= 35) return '0.85rem';
+    return '0.75rem';
   };
 
   return (

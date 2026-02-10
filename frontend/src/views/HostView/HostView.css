@@ -139,3 +139,22 @@
 .toggle-score-adjustments:active {
   background: #dee2e6;
 }
+
+
+/* Force category-row to match clue-row grid exactly */
+.host-view .board-container .category-row {
+  display: grid !important;
+  grid-template-columns: repeat(6, 1fr) !important;
+  gap: 0 !important;
+}
+
+.host-view .board-container .category-header {
+  min-width: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.host-view .board-container .clue-card {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}

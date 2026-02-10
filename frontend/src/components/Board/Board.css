@@ -13,25 +13,7 @@
   margin-bottom: 0;
 }
 
-.category-header {
-  background-image: linear-gradient(to right, rgb(1, 27, 172), rgb(0, 19, 150));
-  color: white;
-  padding: 1rem 0.5rem;
-  text-align: center;
-  font-weight: bold;
-  font-size: 2.75rem;
-  font-family: 'Impact', sans-serif;
-  text-transform: uppercase;
-  border: 2px solid black;
-  border-bottom: 8px solid black;
-  height: 120px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  hyphens: auto;
-}
+.category-header {  background-image: linear-gradient(to right, rgb(1, 27, 172), rgb(0, 19, 150));  color: white;  padding: 1rem 0.5rem;  text-align: center;  font-weight: bold;  font-size: 2.75rem;  font-family: 'Impact', sans-serif;  text-transform: uppercase;  border: 5px solid black;  border-bottom: 8px solid black;  height: 120px;  display: flex;  align-items: center;  justify-content: center;  overflow-wrap: break-word;  word-wrap: break-word;  hyphens: auto;  box-sizing: border-box;}
 
 .clue-row {
   display: grid;

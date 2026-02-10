@@ -16,6 +16,7 @@
   font-family: 'Arial Black', sans-serif;
   color: #FFD700;
   text-shadow: 2px 4px 4px black;
+  box-sizing: border-box;
 }
 
 .clue-card:not(.revealed):not(.disabled):hover {
