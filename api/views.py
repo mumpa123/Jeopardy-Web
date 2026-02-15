@@ -575,3 +575,155 @@ class GameViewSet(viewsets.ModelViewSet):
 
 
 
+
+
+# TTS Proxy
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+import requests
+import json
+import wave
+import io
+import logging
+
+logger = logging.getLogger(__name__)
+
+TTS_SERVER_URL = 'http://192.168.1.16:5000'
+
+
+def generate_silence_wav(duration=1.0, sample_rate=22050, sample_width=2, channels=1):
+    """Generate WAV file containing silence."""
+    num_frames = int(duration * sample_rate)
+    silence_data = b'\x00' * (num_frames * sample_width * channels)
+
+    wav_buffer = io.BytesIO()
+    with wave.open(wav_buffer, 'wb') as wav_file:
+        wav_file.setnchannels(channels)
+        wav_file.setsampwidth(sample_width)
+        wav_file.setframerate(sample_rate)
+        wav_file.writeframes(silence_data)
+
+    return wav_buffer.getvalue()
+
+
+def prepend_silence_to_wav(silence_wav_bytes, original_wav_bytes):
+    """Prepend silence WAV to original WAV audio."""
+    # Read original WAV parameters
+    original_buffer = io.BytesIO(original_wav_bytes)
+    with wave.open(original_buffer, 'rb') as original_wav:
+        channels = original_wav.getnchannels()
+        sample_width = original_wav.getsampwidth()
+        sample_rate = original_wav.getframerate()
+        original_frames = original_wav.readframes(original_wav.getnframes())
+
+    # Read silence WAV
+    silence_buffer = io.BytesIO(silence_wav_bytes)
+    with wave.open(silence_buffer, 'rb') as silence_wav:
+        # Validate format compatibility
+        if (silence_wav.getnchannels() != channels or
+            silence_wav.getsampwidth() != sample_width or
+            silence_wav.getframerate() != sample_rate):
+            raise ValueError("WAV format mismatch")
+
+        silence_frames = silence_wav.readframes(silence_wav.getnframes())
+
+    # Combine audio frames (silence first)
+    combined_frames = silence_frames + original_frames
+
+    # Write combined WAV
+    output_buffer = io.BytesIO()
+    with wave.open(output_buffer, 'wb') as output_wav:
+        output_wav.setnchannels(channels)
+        output_wav.setsampwidth(sample_width)
+        output_wav.setframerate(sample_rate)
+        output_wav.writeframes(combined_frames)
+
+    return output_buffer.getvalue()
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def tts_proxy(request):
+    """
+    Proxy TTS requests to the Windows TTS server.
+    This allows HTTPS frontend to call HTTP TTS server without mixed content issues.
+    Prepends 1 second of silence to prevent speaker wake-up clipping.
+    """
+    try:
+        # Parse request body
+        data = json.loads(request.body)
+        text = data.get('text', '')
+        
+        if not text:
+            return JsonResponse({'error': 'Missing text field'}, status=400)
+        
+        # Forward request to TTS server
+        response = requests.post(
+            f'{TTS_SERVER_URL}/tts/synthesize',
+            json={'text': text},
+            timeout=30
+        )
+        
+        # Return the audio file
+        if response.status_code == 200:
+            try:
+                original_wav = response.content
+
+                # Extract audio parameters from TTS response
+                wav_buffer = io.BytesIO(original_wav)
+                with wave.open(wav_buffer, 'rb') as wav_file:
+                    sample_rate = wav_file.getframerate()
+                    sample_width = wav_file.getsampwidth()
+                    channels = wav_file.getnchannels()
+
+                # Generate 1 second of silence matching audio format
+                silence_wav = generate_silence_wav(
+                    duration=1.0,
+                    sample_rate=sample_rate,
+                    sample_width=sample_width,
+                    channels=channels
+                )
+
+                # Combine silence + original audio
+                combined_wav = prepend_silence_to_wav(silence_wav, original_wav)
+
+                logger.info(
+                    f'TTS audio processed: original={len(original_wav)} bytes, '
+                    f'combined={len(combined_wav)} bytes, '
+                    f'format={channels}ch/{sample_rate}Hz/{sample_width*8}bit'
+                )
+
+                return HttpResponse(
+                    combined_wav,
+                    content_type='audio/wav',
+                    status=200
+                )
+
+            except Exception as audio_error:
+                # Graceful degradation: return original audio if processing fails
+                logger.warning(
+                    f'Failed to prepend silence: {audio_error}. '
+                    f'Returning original audio.'
+                )
+                return HttpResponse(
+                    response.content,
+                    content_type='audio/wav',
+                    status=200
+                )
+        else:
+            return JsonResponse(
+                {'error': f'TTS server error: {response.status_code}'},
+                status=response.status_code
+            )
+            
+    except requests.exceptions.RequestException as e:
+        return JsonResponse(
+            {'error': f'Failed to connect to TTS server: {str(e)}'},
+            status=503
+        )
+    except Exception as e:
+        return JsonResponse(
+            {'error': f'Internal error: {str(e)}'},
+            status=500
+        )
