@@ -149,6 +149,7 @@ STATICFILES_DIRS = [
 
 # CORS Configuration for production
 CORS_ALLOWED_ORIGINS = [
+    "http://jeopardy.pkcj.org",
     "https://jeopardy.pkcj.org",
 ]
 CORS_ALLOW_CREDENTIALS = True

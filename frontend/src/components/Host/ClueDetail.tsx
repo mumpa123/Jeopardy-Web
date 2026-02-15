@@ -1,17 +1,21 @@
-import type { Clue } from '../../types/Episode';
-import { formatCurrency, getClueValue, cleanClueText } from '../../utils/formatters';
-import './ClueDetail.css';
+import type { Clue } from "../../types/Episode";
+import { formatCurrency, getClueValue, cleanClueText } from "../../utils/formatters";
+import "./ClueDetail.css";
 
 interface ClueDetailProps {
   clue: Clue | null;
-  currentRound: 'single' | 'double' | 'final';
+  currentRound: "single" | "double" | "final";
   showAnswer: boolean;
   buzzerEnabled: boolean;
+  isReading?: boolean;
+  autoPlayTTS?: boolean;
   onToggleAnswer: () => void;
   onNextClue: () => void;
   onEnableBuzzer: () => void;
   onMarkCorrect: () => void;
   onMarkIncorrect: () => void;
+  onReadAloud?: () => void;
+  onToggleAutoPlay?: (enabled: boolean) => void;
 }
 
 export function ClueDetail({
@@ -19,11 +23,15 @@ export function ClueDetail({
   currentRound,
   showAnswer,
   buzzerEnabled,
+  isReading = false,
+  autoPlayTTS = false,
   onToggleAnswer,
   onNextClue,
   onEnableBuzzer,
   onMarkCorrect,
-  onMarkIncorrect
+  onMarkIncorrect,
+  onReadAloud,
+  onToggleAutoPlay
 }: ClueDetailProps) {
   if (!clue) {
     return (
@@ -34,7 +42,7 @@ export function ClueDetail({
   }
 
   // Calculate the correct value based on position and round
-  const displayValue = currentRound === 'final'
+  const displayValue = currentRound === "final"
     ? clue.value
     : getClueValue(clue.position, currentRound);
 
@@ -52,15 +60,55 @@ export function ClueDetail({
         <p dangerouslySetInnerHTML={{ __html: cleanClueText(clue.question) }} />
       </div>
 
-      {/* Finished Reading Button - Show when buzzer not enabled */}
-      {!buzzerEnabled && (
-        <div className="clue-reading-section">
-          <button
-            className="finished-reading-button"
-            onClick={onEnableBuzzer}
-          >
-            Finished Reading
-          </button>
+      {/* TTS Controls - Show when buzzer not enabled */}
+      {!buzzerEnabled && !showAnswer && (
+        <div className="tts-controls">
+          {/* Toggle Switch */}
+          {onToggleAutoPlay && (
+            <div className="tts-toggle-container">
+              <label className="tts-toggle-label">
+                <span className="tts-icon">{autoPlayTTS ? "🔊" : "🔇"}</span>
+                Auto-read clues
+              </label>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={autoPlayTTS}
+                  onChange={(e) => onToggleAutoPlay(e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+          )}
+
+          {/* TTS Status Indicator */}
+          {isReading && (
+            <div className="tts-status">
+              <span className="tts-status-icon">🔊</span>
+              Reading clue...
+            </div>
+          )}
+
+          {/* Manual Read Button - only show when auto-play is OFF and TTS is NOT currently playing */}
+          {!autoPlayTTS && !isReading && onReadAloud && (
+            <button
+              onClick={onReadAloud}
+              className="read-aloud-button"
+            >
+              🔊 Read Aloud
+            </button>
+          )}
+
+          {/* Finished Reading Button - only show when auto-play is OFF */}
+          {!autoPlayTTS && (
+            <button
+              className="finished-reading-button"
+              onClick={onEnableBuzzer}
+              disabled={isReading}
+            >
+              ✓ Finished Reading
+            </button>
+          )}
         </div>
       )}
 
@@ -86,10 +134,10 @@ export function ClueDetail({
       <div className="clue-answer-section">
         <div className="clue-buttons">
           <button
-            className={`toggle-answer-button ${showAnswer ? 'showing' : ''}`}
+            className={`toggle-answer-button ${showAnswer ? "showing" : ""}`}
             onClick={onToggleAnswer}
           >
-            {showAnswer ? 'Hide Answer' : 'Show Answer'}
+            {showAnswer ? "Hide Answer" : "Show Answer"}
           </button>
           <button
             className="next-clue-button"

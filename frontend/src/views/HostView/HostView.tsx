@@ -135,6 +135,11 @@ export function HostView() {
   const [ddWager, setDdWager] = useState<number | null>(null);
   const [ddAnswer, setDdAnswer] = useState<string | null>(null);
 
+
+  // TTS state
+  const [isReading, setIsReading] = useState(false);
+  const [autoPlayTTS, setAutoPlayTTS] = useState(false);
+  const ttsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Final Jeopardy state
   const [fjStage, setFjStage] = useState<FJStage>('not_started');
   const [fjCategory, setFjCategory] = useState<string | null>(null);
@@ -803,6 +808,20 @@ export function HostView() {
         }
         break;
 
+      case 'audio_finished':
+        console.log('[HostView] Audio playback finished');
+        // Clear timeout
+        if (ttsTimeoutRef.current) {
+          clearTimeout(ttsTimeoutRef.current);
+          ttsTimeoutRef.current = null;
+        }
+        // Auto-trigger "Finished Reading" when audio completes
+        setIsReading(false);
+        if (autoPlayTTS) {
+          handleEnableBuzzer(); // Enable buzzer automatically
+        }
+        break;
+
       case 'error':
         console.error('[HostView] Error from server:', message.message);
         break;
@@ -832,9 +851,16 @@ export function HostView() {
     // Send clue reveal message to all clients
     if (wsRef.current?.isConnected()) {
       wsRef.current.send({
-        type: 'reveal_clue',
+        type: "reveal_clue",
         clue_id: clue.id
       });
+    }
+
+    // Auto-trigger TTS if toggle is enabled and not a Daily Double
+    if (autoPlayTTS && !clue.is_daily_double) {
+      setTimeout(() => {
+        handleReadAloud();
+      }, 100);
     }
   };
 
@@ -853,6 +879,48 @@ export function HostView() {
     setShowAnswer(!showAnswer);
   };
 
+
+  const handleReadAloud = async () => {
+    if (isReading || !selectedClue) return;
+
+    setIsReading(true);
+
+    try {
+      // Clean clue text (remove HTML)
+      const cleanText = selectedClue.question
+        .replace(/<[^>]*>/g, ""); // Strip HTML tags
+
+      console.log("[HostView] Broadcasting TTS request:", cleanText);
+
+      // Set timeout to auto-recover if audio doesnt finish (30 seconds)
+      ttsTimeoutRef.current = setTimeout(() => {
+        console.warn("[HostView] TTS timeout - audio did not finish in 30s");
+        setIsReading(false);
+      }, 30000);
+
+      // Send text to BoardView
+      if (wsRef.current?.isConnected()) {
+        wsRef.current.send({
+          type: "play_audio",
+          clue_text: cleanText,
+          clue_id: selectedClue.id
+        });
+      } else {
+        throw new Error("WebSocket not connected");
+      }
+    } catch (error) {
+      console.error("[HostView] Read aloud failed:", error);
+      setIsReading(false);
+      if (ttsTimeoutRef.current) {
+        clearTimeout(ttsTimeoutRef.current);
+        ttsTimeoutRef.current = null;
+      }
+    }
+  };
+
+  const handleToggleAutoPlay = (enabled: boolean) => {
+    setAutoPlayTTS(enabled);
+  };
   const handleClearBuzzQueue = () => {
     setBuzzQueue([]);
   };
@@ -1178,6 +1246,10 @@ export function HostView() {
               buzzerEnabled={buzzerEnabled}
               onToggleAnswer={handleToggleAnswer}
               onNextClue={handleNextClue}
+              isReading={isReading}
+              autoPlayTTS={autoPlayTTS}
+              onReadAloud={handleReadAloud}
+              onToggleAutoPlay={handleToggleAutoPlay}
               onEnableBuzzer={handleEnableBuzzer}
               onMarkCorrect={handleMarkCorrect}
               onMarkIncorrect={handleMarkIncorrect}
@@ -1195,6 +1267,10 @@ export function HostView() {
               onNextClue={handleNextClue}
               onEnableBuzzer={handleEnableBuzzer}
               onMarkCorrect={handleMarkCorrect}
+              isReading={isReading}
+              autoPlayTTS={autoPlayTTS}
+              onReadAloud={handleReadAloud}
+              onToggleAutoPlay={handleToggleAutoPlay}
               onMarkIncorrect={handleMarkIncorrect}
             />
           )}
