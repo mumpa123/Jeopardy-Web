@@ -4,6 +4,9 @@ from django.shortcuts import get_object_or_404
 import json
 import base64
 import aiohttp
+import wave
+import io
+import struct
 
 from .models import Game, GameParticipant, GameAction
 from .engine import GameStateManager
@@ -1376,6 +1379,56 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             print(f"[get_final_jeopardy_data] Error: {e}")
             return None
 
+    def prepend_silence_to_wav(self, wav_data, duration_seconds=1.0):
+        """
+        Prepend silence to a WAV file to avoid audio clipping on slow devices.
+
+        Args:
+            wav_data: bytes of the original WAV file
+            duration_seconds: seconds of silence to prepend (default 1.0)
+
+        Returns:
+            bytes of the new WAV file with silence prepended
+        """
+        try:
+            # Read the original WAV file
+            input_buffer = io.BytesIO(wav_data)
+            with wave.open(input_buffer, 'rb') as wav_file:
+                # Get WAV parameters
+                n_channels = wav_file.getnchannels()
+                sample_width = wav_file.getsampwidth()
+                framerate = wav_file.getframerate()
+                n_frames = wav_file.getnframes()
+
+                # Read original audio data
+                original_audio = wav_file.readframes(n_frames)
+
+            # Calculate silence duration in frames
+            silence_frames = int(framerate * duration_seconds)
+
+            # Create silence (zeros)
+            silence_data = b'\x00' * (silence_frames * n_channels * sample_width)
+
+            # Combine silence + original audio
+            combined_audio = silence_data + original_audio
+
+            # Write to new WAV file
+            output_buffer = io.BytesIO()
+            with wave.open(output_buffer, 'wb') as wav_file:
+                wav_file.setnchannels(n_channels)
+                wav_file.setsampwidth(sample_width)
+                wav_file.setframerate(framerate)
+                wav_file.writeframes(combined_audio)
+
+            # Get the bytes
+            output_buffer.seek(0)
+            return output_buffer.read()
+
+        except Exception as e:
+            print(f"[prepend_silence_to_wav] Error: {e}")
+            # If there's an error, return original data
+            return wav_data
+
     async def handle_play_audio(self, content):
         """
         Handle TTS audio playback request.
@@ -1404,6 +1457,9 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
 
                     # Read WAV file
                     audio_data = await response.read()
+
+                    # Prepend 1 second of silence to avoid audio clipping
+                    audio_data = self.prepend_silence_to_wav(audio_data, duration_seconds=1.0)
 
                     # Encode as base64 for transmission
                     audio_base64 = base64.b64encode(audio_data).decode('utf-8')
