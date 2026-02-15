@@ -808,18 +808,24 @@ export function HostView() {
         }
         break;
 
+      case 'audio_ready':
+        console.log('[HostView] Audio sent to BoardView for playback');
+        // Audio will play on BoardView, just wait for audio_finished message
+        break;
+
       case 'audio_finished':
         console.log('[HostView] Audio playback finished');
+        console.log('[HostView] autoPlayTTS:', autoPlayTTS);
         // Clear timeout
         if (ttsTimeoutRef.current) {
           clearTimeout(ttsTimeoutRef.current);
           ttsTimeoutRef.current = null;
         }
-        // Auto-trigger "Finished Reading" when audio completes
+        // Set isReading to false
         setIsReading(false);
-        if (autoPlayTTS) {
-          handleEnableBuzzer(); // Enable buzzer automatically
-        }
+        // Always enable buzzer when audio finishes (same as clicking "Finished Reading")
+        console.log('[HostView] Calling handleEnableBuzzer...');
+        handleEnableBuzzer();
         break;
 
       case 'error':
@@ -857,9 +863,11 @@ export function HostView() {
     }
 
     // Auto-trigger TTS if toggle is enabled and not a Daily Double
+    console.log('[HostView] autoPlayTTS:', autoPlayTTS, 'is_daily_double:', clue.is_daily_double);
     if (autoPlayTTS && !clue.is_daily_double) {
+      console.log('[HostView] Auto-triggering TTS...');
       setTimeout(() => {
-        handleReadAloud();
+        handleReadAloud(clue);  // Pass clue directly to avoid stale state
       }, 100);
     }
   };
@@ -880,14 +888,17 @@ export function HostView() {
   };
 
 
-  const handleReadAloud = async () => {
-    if (isReading || !selectedClue) return;
+  const handleReadAloud = async (clueOverride?: Clue) => {
+    // Use provided clue or fall back to selectedClue
+    const clueToRead = clueOverride || selectedClue;
+
+    if (isReading || !clueToRead) return;
 
     setIsReading(true);
 
     try {
       // Clean clue text (remove HTML)
-      const cleanText = selectedClue.question
+      const cleanText = clueToRead.question
         .replace(/<[^>]*>/g, ""); // Strip HTML tags
 
       console.log("[HostView] Broadcasting TTS request:", cleanText);
@@ -903,7 +914,7 @@ export function HostView() {
         wsRef.current.send({
           type: "play_audio",
           clue_text: cleanText,
-          clue_id: selectedClue.id
+          clue_id: clueToRead.id
         });
       } else {
         throw new Error("WebSocket not connected");

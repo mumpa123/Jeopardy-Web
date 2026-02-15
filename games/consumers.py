@@ -2,6 +2,8 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.shortcuts import get_object_or_404
 import json
+import base64
+import aiohttp
 
 from .models import Game, GameParticipant, GameAction
 from .engine import GameStateManager
@@ -123,6 +125,8 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
                 'start_fj_timer': self.handle_start_fj_timer,
                 'submit_fj_answer': self.handle_submit_fj_answer,
                 'judge_fj_answer': self.handle_judge_fj_answer,
+                'play_audio': self.handle_play_audio,
+                'audio_finished': self.handle_audio_finished,
         }
 
 
@@ -1371,6 +1375,88 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         except Exception as e:
             print(f"[get_final_jeopardy_data] Error: {e}")
             return None
+
+    async def handle_play_audio(self, content):
+        """
+        Handle TTS audio playback request.
+        Sends clue text to TTS server, gets WAV file, and broadcasts to clients.
+        """
+        text = content.get('clue_text') or content.get('text')
+        voice = content.get('voice', 'en_US-amy-medium')
+
+        if not text:
+            await self.send_json({
+                'type': 'error',
+                'message': 'No text provided for TTS'
+            })
+            return
+
+        try:
+            # Call TTS API on Windows server
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    'http://192.168.1.16:5000/tts/synthesize',
+                    json={'text': text, 'voice': voice},
+                    timeout=aiohttp.ClientTimeout(total=30)
+                ) as response:
+                    if response.status != 200:
+                        raise Exception(f"TTS API returned status {response.status}")
+
+                    # Read WAV file
+                    audio_data = await response.read()
+
+                    # Encode as base64 for transmission
+                    audio_base64 = base64.b64encode(audio_data).decode('utf-8')
+
+            # Broadcast audio to all clients
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'audio_ready',
+                    'audio_data': audio_base64,
+                    'text': text
+                }
+            )
+
+        except Exception as e:
+            print(f"[handle_play_audio] Error: {e}")
+            await self.send_json({
+                'type': 'error',
+                'message': f'TTS error: {str(e)}'
+            })
+
+    async def audio_ready(self, event):
+        """
+        Broadcast audio data to client.
+        """
+        await self.send_json({
+            'type': 'audio_ready',
+            'audio_data': event['audio_data'],
+            'text': event['text']
+        })
+
+    async def handle_audio_finished(self, content):
+        """
+        Handle audio playback completion from BoardView.
+        Broadcast to all clients (especially HostView).
+        """
+        print('[handle_audio_finished] Audio playback completed on BoardView')
+
+        # Broadcast to all clients
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'audio_playback_finished'
+            }
+        )
+
+    async def audio_playback_finished(self, event):
+        """
+        Broadcast audio_finished to all clients.
+        """
+        await self.send_json({
+            'type': 'audio_finished'
+        })
 
 
 

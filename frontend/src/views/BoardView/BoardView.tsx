@@ -541,6 +541,41 @@ export function BoardView() {
         // Could show an abandonment message
         break;
 
+      case 'audio_ready':
+        console.log('[BoardView] Audio ready, decoding and playing...');
+        try {
+          // Decode base64 audio data
+          const audioData = atob(message.audio_data);
+          const arrayBuffer = new Uint8Array(audioData.length);
+          for (let i = 0; i < audioData.length; i++) {
+            arrayBuffer[i] = audioData.charCodeAt(i);
+          }
+          const blob = new Blob([arrayBuffer], { type: 'audio/wav' });
+          const audioUrl = URL.createObjectURL(blob);
+          const audio = new Audio(audioUrl);
+
+          // Play the audio
+          audio.play().catch(err => {
+            console.error('[BoardView] Audio playback failed:', err);
+          });
+
+          // When finished, send audio_finished message back
+          audio.onended = () => {
+            console.log('[BoardView] Audio playback completed, sending audio_finished');
+            URL.revokeObjectURL(audioUrl); // Clean up blob URL
+
+            // Send audio_finished message back to server
+            if (wsRef.current?.isConnected()) {
+              wsRef.current.send({
+                type: 'audio_finished'
+              });
+            }
+          };
+        } catch (error) {
+          console.error('[BoardView] Error decoding audio:', error);
+        }
+        break;
+
       case 'error':
         console.error('[BoardView] Error from server:', message.message);
         break;

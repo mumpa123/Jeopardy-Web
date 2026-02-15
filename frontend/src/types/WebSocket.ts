@@ -129,6 +129,16 @@ export interface StartFJTimerMessage extends BaseMessage {
 	type: 'start_fj_timer';
 }
 
+export interface PlayAudioMessage extends BaseMessage {
+	type: 'play_audio';
+	clue_text: string;
+	clue_id?: number;
+}
+
+export interface AudioFinishedOutgoingMessage extends BaseMessage {
+	type: 'audio_finished';
+}
+
 // Incoming messages (server -> client)
 
 export interface ConnectionEstablishedMessage extends BaseMessage {
@@ -320,6 +330,16 @@ export interface GameAbandonedMessage extends BaseMessage {
 	final_scores: { [key: string]: number };
 }
 
+export interface AudioReadyMessage extends BaseMessage {
+	type: 'audio_ready';
+	audio_data: string; // base64 encoded WAV file
+	text: string; // original clue text
+}
+
+export interface AudioFinishedMessage extends BaseMessage {
+	type: 'audio_finished';
+}
+
 // Union type of all possible messages
 export type IncomingMessage =
 	| ConnectionEstablishedMessage
@@ -346,6 +366,8 @@ export type IncomingMessage =
 	| RoundChangedMessage
 	| GameCompletedMessage
 	| GameAbandonedMessage
+	| AudioReadyMessage
+	| AudioFinishedMessage
 	| ErrorMessage;
 
 export type OutgoingMessage =
@@ -370,7 +392,9 @@ export type OutgoingMessage =
 	| JudgeFJAnswerMessage
 	| StartRoundMessage
 	| EndGameMessage
-	| AbandonGameMessage;
+	| AbandonGameMessage
+	| PlayAudioMessage
+	| AudioFinishedOutgoingMessage;
 	
 
 

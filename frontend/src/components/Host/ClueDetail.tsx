@@ -37,6 +37,26 @@ export function ClueDetail({
     return (
       <div className="clue-detail empty">
         <p>No clue selected. Click a clue on the board to begin.</p>
+
+        {/* Show TTS toggle even when no clue is selected */}
+        {onToggleAutoPlay && (
+          <div className="tts-controls">
+            <div className="tts-toggle-container">
+              <label className="tts-toggle-label">
+                <span className="tts-icon">{autoPlayTTS ? "🔊" : "🔇"}</span>
+                Auto-read clues
+              </label>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={autoPlayTTS}
+                  onChange={(e) => onToggleAutoPlay(e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
