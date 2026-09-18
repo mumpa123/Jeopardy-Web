@@ -18,7 +18,7 @@ mkdir -p .pids
 
 # Run IP detection script
 echo "🔍 Detecting network IP and updating configuration..."
-python3 update_ip.py
+#python3 update_ip.py  # Disabled - using dynamic detection
 
 if [ $? -ne 0 ]; then
     echo ""
