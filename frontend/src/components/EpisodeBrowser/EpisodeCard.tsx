@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { GameHistoryItem } from './GameHistoryItem';
 import type { EpisodeWithHistory, GameResult } from '../../types/Episode';
 import { api } from '../../services/api';

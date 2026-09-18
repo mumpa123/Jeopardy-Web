@@ -5,15 +5,13 @@
 
 
 import type {
-	Episode,
-	EpisodeListItem,
 	Game,
 	CreateGameRequest,
 	JoinGameRequest,
 	GameParticipant,
 	Player
 } from '../types/Game';
-import type { Season, EpisodeWithHistory, GameResult } from '../types/Episode';
+import type { Episode, EpisodeListItem, Season, EpisodeWithHistory, GameResult } from '../types/Episode';
 import { API_BASE_URL } from '../config';
 
 // Generic fetch wrapper with error handling

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import type { Clue } from '../../types/Episode';
 import { formatCurrency, getClueValue, cleanClueText } from '../../utils/formatters';
 import './ClueModal.css';
@@ -15,9 +15,6 @@ interface ClueModalProps {
 export function ClueModal({ clue, currentRound, onClose, showAnswer = false, buzzerEnabled = false, buzzWon = false }: ClueModalProps) {
   const questionRef = useRef<HTMLDivElement>(null);
   const answerRef = useRef<HTMLDivElement>(null);
-  const [questionFontSize, setQuestionFontSize] = useState(6); // rem
-  const [answerFontSize, setAnswerFontSize] = useState(4.25); // rem
-
   useEffect(() => {
     const adjustFontSize = () => {
       // Adjust question font size
@@ -38,8 +35,6 @@ export function ClueModal({ clue, currentRound, onClose, showAnswer = false, buz
             fontSize -= 0.2;
             questionRef.current.style.fontSize = `${fontSize}rem`;
           }
-
-          setQuestionFontSize(fontSize);
         }
       }
 
@@ -61,8 +56,6 @@ export function ClueModal({ clue, currentRound, onClose, showAnswer = false, buz
             fontSize -= 0.2;
             answerRef.current.style.fontSize = `${fontSize}rem`;
           }
-
-          setAnswerFontSize(fontSize);
         }
       }
     };

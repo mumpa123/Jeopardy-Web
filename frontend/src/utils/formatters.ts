@@ -97,15 +97,15 @@ export function cleanClueText(text: string): string {
 
   // For links to media files, extract the link text and add a placeholder
   // Pattern: <a href="...image.jpg">Link Text</a> -> Link Text [missing image]
-  cleaned = cleaned.replace(/<a[^>]*href[^>]*\.(jpg|jpeg|png|gif|bmp|svg|webp)[^>]*>(.*?)<\/a>/gi, (match, ext, linkText) => {
+  cleaned = cleaned.replace(/<a[^>]*href[^>]*\.(jpg|jpeg|png|gif|bmp|svg|webp)[^>]*>(.*?)<\/a>/gi, (_match, _ext, linkText) => {
     return linkText ? `${linkText} [missing image]` : '[missing image]';
   });
 
-  cleaned = cleaned.replace(/<a[^>]*href[^>]*\.(mp4|webm|avi|mov|wmv|flv)[^>]*>(.*?)<\/a>/gi, (match, ext, linkText) => {
+  cleaned = cleaned.replace(/<a[^>]*href[^>]*\.(mp4|webm|avi|mov|wmv|flv)[^>]*>(.*?)<\/a>/gi, (_match, _ext, linkText) => {
     return linkText ? `${linkText} [missing video]` : '[missing video]';
   });
 
-  cleaned = cleaned.replace(/<a[^>]*href[^>]*\.(mp3|wav|ogg|m4a)[^>]*>(.*?)<\/a>/gi, (match, ext, linkText) => {
+  cleaned = cleaned.replace(/<a[^>]*href[^>]*\.(mp3|wav|ogg|m4a)[^>]*>(.*?)<\/a>/gi, (_match, _ext, linkText) => {
     return linkText ? `${linkText} [missing audio]` : '[missing audio]';
   });
 

@@ -147,6 +147,7 @@ export interface ConnectionEstablishedMessage extends BaseMessage {
 	state: any; // GameState
 	scores: { [key: string]: number };
 	players: { [key: string]: string };
+	current_player: number | null;
 }
 
 export interface BuzzResultMessage extends BaseMessage {
@@ -157,8 +158,8 @@ export interface BuzzResultMessage extends BaseMessage {
 	winner: number | null;
 	position: number;
 	server_timestamp: number;
-	cooldown?: boolean; // whether this buzz was rejected due to cooldown
-	cooldown_remaining?: number; // seconds remaining in cooldown
+	cooldown: boolean; // whether this buzz was rejected due to cooldown
+	cooldown_remaining: number; // seconds remaining in cooldown
 }
 
 export interface ClueRevealedMessage extends BaseMessage {
@@ -179,6 +180,7 @@ export interface AnswerJudgedMessage extends BaseMessage {
 	correct: boolean;
 	value: number;
 	new_score: number;
+	current_player: number | null;
 }
 
 export interface ReturnToBoardMessage extends BaseMessage {
@@ -312,6 +314,7 @@ export interface RoundChangedMessage extends BaseMessage {
 	type: 'round_changed';
 	round: 'single' | 'double' | 'final';
 	revealed_clues: number[];
+	current_player: number | null;
 }
 
 export interface FJTimerStartedMessage extends BaseMessage {

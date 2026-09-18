@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { cleanClueText } from '../../utils/formatters';
 import './FinalJeopardyControls.css';
 
@@ -13,18 +12,21 @@ interface PlayerAnswer {
   correct?: boolean;
 }
 
-interface Clue {
+// The FJ clue shape (no board `position`, unlike the shared board Clue type,
+// since there's no grid for Final Jeopardy).
+export interface FinalJeopardyClue {
   id: number;
   question: string;
   answer: string;
-  value: number;
+  value?: number;
+  is_daily_double: boolean;
   category?: string;
 }
 
 interface FinalJeopardyControlsProps {
   stage: FJStage;
   category: string | null;
-  clue: Clue | null;  // The FJ clue with correct answer
+  clue: FinalJeopardyClue | null;  // The FJ clue with correct answer
   playerAnswers: PlayerAnswer[];
   timeRemaining: number | null;  // null means timer not started
   onStartFinalJeopardy: () => void;
@@ -46,16 +48,6 @@ export function FinalJeopardyControls({
   onJudgeAnswer,
   onShowAnswers
 }: FinalJeopardyControlsProps) {
-  const [allWagersIn, setAllWagersIn] = useState(false);
-
-  // Check if all players have submitted wagers
-  useEffect(() => {
-    if (playerAnswers.length > 0) {
-      const allIn = playerAnswers.every(p => p.wager !== null);
-      setAllWagersIn(allIn);
-    }
-  }, [playerAnswers]);
-
   return (
     <div className="final-jeopardy-controls">
       <div className="fj-header">

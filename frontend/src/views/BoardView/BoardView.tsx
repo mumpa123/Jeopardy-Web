@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Header } from '../../components/Header/Header';
 import { ScoreDisplay } from '../../components/ScoreDisplay/ScoreDisplay';
 import { Board } from '../../components/Board/Board';
 import { ClueModal } from '../../components/Board/ClueModal';
@@ -273,6 +272,11 @@ export function BoardView() {
         if (message.current_player !== undefined) {
           setCurrentPlayer(message.current_player);
         }
+        // If answer is incorrect, reset to red border (buzzing will reopen)
+        if (!message.correct) {
+          setBuzzWonClueId(null);
+          console.log('[BoardView] Answer incorrect, resetting border to red');
+        }
         break;
 
       case 'buzzer_enabled':
@@ -301,14 +305,6 @@ export function BoardView() {
         if (message.accepted && message.winner && message.player_number === message.winner && activeClueIdRef.current) {
           console.log('[BoardView] Setting buzzWonClueId to', activeClueIdRef.current);
           setBuzzWonClueId(activeClueIdRef.current);
-        }
-        break;
-
-      case 'answer_judged':
-        // If answer is incorrect, reset to red border (buzzing will reopen)
-        if (!message.correct) {
-          setBuzzWonClueId(null);
-          console.log('[BoardView] Answer incorrect, resetting border to red');
         }
         break;
 
@@ -383,17 +379,17 @@ export function BoardView() {
         break;
 
       case 'daily_double_detected':
-        console.log('[BoardView] Daily Double detected');
-        setSelectedClue(null); // Clear any previous clue
-        setActiveClueId(null); // Clear active clue to remove red border
         setIsDailyDouble(true);
         setDdPlayerName(playerNames[message.player_number] || `Player ${message.player_number}`);
         setDdWager(null);
+        console.log('[BoardView] Daily Double detected:', { isDailyDouble, ddPlayerName, ddWager });
+        setSelectedClue(null); // Clear any previous clue
+        setActiveClueId(null); // Clear active clue to remove red border
         break;
 
       case 'daily_double_revealed':
-        console.log('[BoardView] Daily Double revealed');
         setDdPlayerName(message.player_name);
+        console.log('[BoardView] Daily Double revealed:', message.player_name);
         // Show DD animation and play sound
         setShowDDAnimation(true);
 
@@ -591,7 +587,7 @@ export function BoardView() {
   return (
     <div className="board-view">
       <div className="board-content">
-        {currentCategories.length > 0 ? (
+        {currentRound !== 'final' && currentCategories.length > 0 ? (
           <>
             {console.log('[BoardView] Rendering Board with:', { activeClueId, buzzerEnabled, buzzWonClueId })}
             <Board
