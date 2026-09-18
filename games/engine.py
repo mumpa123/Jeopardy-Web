@@ -43,7 +43,7 @@ class GameStateManager:
         self.attempted_players_key = f"game:{self.game_id}:attempted_players"
 
         # Buzz cooldown duration in seconds
-        self.BUZZ_COOLDOWN_SECONDS = 2
+        self.BUZZ_COOLDOWN_SECONDS = 0.25
 
     def initialize_game(self, episode_id: int, player_numbers: List[int], daily_doubles: List[int] = None) -> Dict:
         """
