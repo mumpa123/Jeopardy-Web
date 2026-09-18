@@ -20,6 +20,9 @@ echo "== Restoring files from $TAG as a new commit on main =="
 git checkout "$TAG" -- .
 git commit -m "Rollback to $TAG"
 
+echo "== Stopping prod service (so nothing holds a connection during DB restore) =="
+sudo systemctl stop jeopardy.service
+
 echo "== Restoring database from $DUMP =="
 sudo -u postgres dropdb jeopardy_v2
 sudo -u postgres createdb jeopardy_v2 --owner jeopardy_user
