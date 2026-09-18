@@ -380,6 +380,13 @@ export function HostView() {
         if (message.current_player !== undefined) {
           setCurrentPlayer(message.current_player);
         }
+
+        // Restore revealed clues (includes placeholder clues pre-revealed
+        // at game init) - without this, they only show as revealed after
+        // the next state update instead of immediately on load.
+        if (message.state?.revealed_clues) {
+          setRevealedClues(message.state.revealed_clues);
+        }
         break;
 
       case 'player_joined':
