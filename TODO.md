@@ -20,22 +20,12 @@ practice before deciding what (if anything) to build here.
 frontend sets or displays it. Not urgent — no code path currently pauses a
 game. Decide later whether a pause feature is wanted.
 
-## Host can't start Final Jeopardy if not everyone wagered (wanted)
+## Host can't start Final Jeopardy if not everyone wagered - DONE (2026-09-18)
 
-If a player left the game, disconnected, or just never submits a Final
-Jeopardy wager, the host has no way to proceed - the "Reveal Clue" button
-never appears at all.
-
-Root cause: in `HostView.tsx`'s `fj_wager_submitted` handler, `fjStage` only
-transitions to `'wagering'` (which is what makes `FinalJeopardyControls`
-render the "Reveal Clue" button - see its `stage === 'wagering'` block)
-once `prev.every(pa => pa.wager !== null)` is true across every player
-tracked in `fjPlayerAnswers`. If one player's wager entry never arrives,
-that condition never becomes true and the stage never advances. There's no
-backend gate at all (`handle_reveal_fj_clue` doesn't check wager
-completeness) - this is purely a frontend UI gap.
-
-Fix should give the host a way to proceed regardless, e.g. a manual
-"Reveal Clue Anyway" override alongside the automatic all-wagers-in
-transition, rather than only ever gating on every tracked player having
-wagered.
+Added a manual "Reveal Clue Anyway" override button to `FinalJeopardyControls`
+(shown alongside the wager-status list during the `category_shown` stage),
+wired to the same `handleRevealFJClue` handler as the automatic path. Lets the
+host proceed even if a player left, disconnected, or never wagers. No backend
+change needed - `handle_reveal_fj_clue` already had no wager-completeness
+gate; confirmed via a WebSocket-level test that `reveal_fj_clue` succeeds
+with zero wagers submitted.

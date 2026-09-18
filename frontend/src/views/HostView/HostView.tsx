@@ -1236,6 +1236,7 @@ export function HostView() {
                 onStartTimer={handleStartFJTimer}
                 onJudgeAnswer={handleJudgeFJAnswer}
                 onShowAnswers={handleShowFJAnswers}
+                onForceReveal={handleRevealFJClue}
               />
             </>
           )}
