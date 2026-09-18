@@ -472,7 +472,7 @@ export function HostView() {
             score: message.scores[numStr] || 0
           };
         }));
-        setRevealedClues([]);
+        setRevealedClues(message.revealed_clues);
         setSelectedClue(null);
         setShowAnswer(false);
         setBuzzQueue([]);

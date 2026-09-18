@@ -171,11 +171,15 @@ class GameStateManager:
         self.redis.delete(f"{self.buzzer_key}:order")
         self.redis.delete(self.attempted_players_key)
 
-    def reset_game(self) -> Dict:
+    def reset_game(self, initial_revealed_clues: List[int] = None) -> Dict:
         """
         Reset the entire game state.
         Clears all scores, revealed clues, and resets round to single.
         Used when host clicks "Reset Game".
+
+        Args:
+            initial_revealed_clues: List of clue IDs to mark as already
+                revealed after the reset (e.g. placeholder clues)
 
         Returns:
             Dict with reset scores
@@ -184,7 +188,7 @@ class GameStateManager:
         reset_state = {
             'current_round': 'single',
             'current_clue': '',
-            'revealed_clues': json.dumps([]),
+            'revealed_clues': json.dumps(initial_revealed_clues or []),
         }
         self.redis.hset(self.state_key, mapping=reset_state)
 

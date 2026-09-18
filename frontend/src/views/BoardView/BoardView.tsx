@@ -361,7 +361,7 @@ export function BoardView() {
         if (message.scores) {
           setScores(convertScores(message.scores));
         }
-        setRevealedClues([]);
+        setRevealedClues(message.revealed_clues);
         setSelectedClue(null);
         setActiveClueId(null);
         setBuzzerEnabled(false);

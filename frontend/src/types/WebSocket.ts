@@ -210,6 +210,7 @@ export interface GameResetMessage extends BaseMessage {
 	type: 'game_reset';
 	scores: { [key: string]: number };
 	players: { [key: string]: string };
+	revealed_clues: number[];
 }
 
 export interface ScoreAdjustedMessage extends BaseMessage {

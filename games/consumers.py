@@ -393,8 +393,10 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         """
         print(f"[handle_reset_game] Processing reset_game request")
 
-        # Reset game state in Redis
-        reset_scores = await database_sync_to_async(self.engine.reset_game)()
+        # Reset game state in Redis, keeping placeholder clues (question='0')
+        # pre-revealed so they don't need to be selected again.
+        placeholder_clues = await self.get_placeholder_clue_ids(self.game['episode_id'])
+        reset_scores = await database_sync_to_async(self.engine.reset_game)(placeholder_clues)
 
         # Reset scores in database as well
         for player_number, score in reset_scores.items():
@@ -414,7 +416,8 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         broadcast_data = {
             'type': 'game_reset',
             'scores': scores_str,
-            'players': players_dict
+            'players': players_dict,
+            'revealed_clues': placeholder_clues
         }
 
         await self.channel_layer.group_send(
@@ -475,11 +478,10 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             'current_round': round_type
         })
 
-        # Clear revealed clues when switching rounds
-        state = await database_sync_to_async(self.engine.get_state)()
-        revealed_clues = []
+        # Reset revealed clues for the new round, but keep placeholder clues
+        # (question='0') pre-revealed so they don't need to be selected.
+        revealed_clues = await self.get_placeholder_clue_ids(self.game['episode_id'])
 
-        # Update revealed clues to empty list
         await database_sync_to_async(self.engine.update_state)({
             'revealed_clues': revealed_clues
         })
