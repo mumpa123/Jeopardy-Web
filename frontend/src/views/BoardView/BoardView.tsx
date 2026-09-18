@@ -665,6 +665,9 @@ export function BoardView() {
           showAnswer={showAnswer}
           buzzerEnabled={buzzerEnabled}
           buzzWon={buzzWonClueId === selectedClue?.id}
+          isDailyDouble={isDailyDouble}
+          dailyDoublePlayerName={ddPlayerName}
+          dailyDoubleWager={ddWager}
         />
       )}
     </div>

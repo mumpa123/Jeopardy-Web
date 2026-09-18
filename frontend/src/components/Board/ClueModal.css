@@ -164,16 +164,16 @@
 
 .daily-double-indicator {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  top: 2rem;
+  left: 2rem;
   background: #e74c3c;
   color: white;
-  font-size: 3.4rem;
+  font-size: 1.7rem;
   font-weight: bold;
-  padding: 2rem 4rem;
-  border-radius: 12px;
-  border: 4px solid white;
+  text-align: center;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  border: 3px solid white;
   box-shadow: 0 0 30px rgba(231, 76, 60, 0.8);
   animation: pulse 1s infinite;
   pointer-events: none;
@@ -181,10 +181,10 @@
 
 @keyframes pulse {
   0%, 100% {
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1);
   }
   50% {
-    transform: translate(-50%, -50%) scale(1.05);
+    transform: scale(1.05);
   }
 }
 
@@ -213,7 +213,9 @@
   }
 
   .daily-double-indicator {
-    font-size: 2.1rem;
-    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    padding: 0.75rem 1.5rem;
+    top: 1rem;
+    left: 1rem;
   }
 }

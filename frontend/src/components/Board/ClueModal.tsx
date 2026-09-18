@@ -10,9 +10,12 @@ interface ClueModalProps {
   showAnswer?: boolean;
   buzzerEnabled?: boolean;
   buzzWon?: boolean;
+  isDailyDouble?: boolean;
+  dailyDoublePlayerName?: string;
+  dailyDoubleWager?: number | null;
 }
 
-export function ClueModal({ clue, currentRound, onClose, showAnswer = false, buzzerEnabled = false, buzzWon = false }: ClueModalProps) {
+export function ClueModal({ clue, currentRound, onClose, showAnswer = false, buzzerEnabled = false, buzzWon = false, isDailyDouble = false, dailyDoublePlayerName = '', dailyDoubleWager = null }: ClueModalProps) {
   const questionRef = useRef<HTMLDivElement>(null);
   const answerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -85,6 +88,14 @@ export function ClueModal({ clue, currentRound, onClose, showAnswer = false, buz
         <div className="clue-value-header">
           {formatCurrency(displayValue)}
         </div>
+
+        {isDailyDouble && (
+          <div className="daily-double-indicator">
+            DAILY DOUBLE!<br />
+            {dailyDoublePlayerName}
+            {dailyDoubleWager !== null && ` wagered ${formatCurrency(dailyDoubleWager)}`}
+          </div>
+        )}
 
         <div className="clue-content">
           <div
