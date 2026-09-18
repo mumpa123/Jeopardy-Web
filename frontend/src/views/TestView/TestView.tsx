@@ -161,7 +161,6 @@ export function TestView() {
 
       <ClueModal
         clue={selectedClue}
-        currentRound="single"
         onClose={handleCloseModal}
         showAnswer={showAnswer}
       />

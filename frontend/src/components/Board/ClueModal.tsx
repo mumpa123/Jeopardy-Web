@@ -1,11 +1,10 @@
 import { useEffect, useRef } from 'react';
 import type { Clue } from '../../types/Episode';
-import { formatCurrency, getClueValue, cleanClueText } from '../../utils/formatters';
+import { formatCurrency, cleanClueText } from '../../utils/formatters';
 import './ClueModal.css';
 
 interface ClueModalProps {
   clue: Clue | null;
-  currentRound: 'single' | 'double' | 'final';
   onClose: () => void;
   showAnswer?: boolean;
   buzzerEnabled?: boolean;
@@ -15,7 +14,7 @@ interface ClueModalProps {
   dailyDoubleWager?: number | null;
 }
 
-export function ClueModal({ clue, currentRound, onClose, showAnswer = false, buzzerEnabled = false, buzzWon = false, isDailyDouble = false, dailyDoublePlayerName = '', dailyDoubleWager = null }: ClueModalProps) {
+export function ClueModal({ clue, onClose, showAnswer = false, buzzerEnabled = false, buzzWon = false, isDailyDouble = false, dailyDoublePlayerName = '', dailyDoubleWager = null }: ClueModalProps) {
   const questionRef = useRef<HTMLDivElement>(null);
   const answerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -77,10 +76,7 @@ export function ClueModal({ clue, currentRound, onClose, showAnswer = false, buz
 
   if (!clue) return null;
 
-  // Calculate the correct value based on position and round
-  const displayValue = currentRound === 'final'
-    ? clue.value
-    : getClueValue(clue.position, currentRound);
+  const displayValue = clue.value;
 
   return (
     <div className="clue-modal-overlay" onClick={onClose}>

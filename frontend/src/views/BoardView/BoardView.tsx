@@ -660,7 +660,6 @@ export function BoardView() {
       {!(isFinalJeopardy && fjShowClue) && (
         <ClueModal
           clue={selectedClue}
-          currentRound={currentRound}
           onClose={() => {}} // No-op - controlled by host
           showAnswer={showAnswer}
           buzzerEnabled={buzzerEnabled}
