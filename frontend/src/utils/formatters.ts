@@ -4,10 +4,10 @@
 
 /**
  * Format currency value
- * Example: 1000 → "$ 1000"
+ * Example: 1000 → "$1000"
  */
 export function formatCurrency(value: number): string {
-  return `$ ${value}`;
+  return `$${value}`;
 }
 
 /**
