@@ -50,8 +50,11 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             participants = await self.get_participants()
             player_numbers = [p['player_number'] for p in participants]
 
-            # Select Daily Doubles for this episode
-            daily_doubles = await self.select_daily_doubles(self.game['episode_id'])
+            # Daily Doubles were already selected (weighted by row, excluding
+            # placeholder clues) when the game was created - use that list
+            # rather than recomputing here, which would overwrite it with an
+            # unweighted, unfiltered selection.
+            daily_doubles = await database_sync_to_async(self.engine.get_daily_doubles)()
 
             await database_sync_to_async(self.engine.initialize_game)(
                 self.game['episode_id'],
@@ -1290,53 +1293,6 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             }
         except Clue.DoesNotExist:
             return None
-
-    @database_sync_to_async
-    def select_daily_doubles(self, episode_id):
-        """
-        Select Daily Doubles for the episode.
-        - Single Jeopardy: 1 Daily Double
-        - Double Jeopardy: 2 Daily Doubles in different categories
-
-        Returns:
-            List of clue IDs that are Daily Doubles
-        """
-        from .models import Clue, Category
-        import random
-
-        daily_doubles = []
-
-        # Select 1 DD for Single Jeopardy
-        single_clues = list(Clue.objects.filter(
-            category__episode_id=episode_id,
-            category__round_type='single'
-        ).select_related('category'))
-
-        if single_clues:
-            single_dd = random.choice(single_clues)
-            daily_doubles.append(single_dd.id)
-            print(f"[select_daily_doubles] Single Jeopardy DD: Clue {single_dd.id} in category {single_dd.category.name}")
-
-        # Select 2 DDs for Double Jeopardy (in different categories)
-        double_categories = list(Category.objects.filter(
-            episode_id=episode_id,
-            round_type='double'
-        ))
-
-        if len(double_categories) >= 2:
-            # Randomly select 2 different categories
-            selected_categories = random.sample(double_categories, 2)
-
-            for cat in selected_categories:
-                # Get clues from this category
-                cat_clues = list(Clue.objects.filter(category=cat))
-                if cat_clues:
-                    dd_clue = random.choice(cat_clues)
-                    daily_doubles.append(dd_clue.id)
-                    print(f"[select_daily_doubles] Double Jeopardy DD: Clue {dd_clue.id} in category {cat.name}")
-
-        print(f"[select_daily_doubles] Selected {len(daily_doubles)} Daily Doubles: {daily_doubles}")
-        return daily_doubles
 
     @database_sync_to_async
     def log_action(self, action_type, data):
