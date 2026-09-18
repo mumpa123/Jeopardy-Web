@@ -1,23 +1,22 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import type { Clue } from '../../types/Episode';
-import { formatCurrency, getClueValue, cleanClueText } from '../../utils/formatters';
+import { formatCurrency, cleanClueText } from '../../utils/formatters';
 import './ClueModal.css';
 
 interface ClueModalProps {
   clue: Clue | null;
-  currentRound: 'single' | 'double' | 'final';
   onClose: () => void;
   showAnswer?: boolean;
   buzzerEnabled?: boolean;
   buzzWon?: boolean;
+  isDailyDouble?: boolean;
+  dailyDoublePlayerName?: string;
+  dailyDoubleWager?: number | null;
 }
 
-export function ClueModal({ clue, currentRound, onClose, showAnswer = false, buzzerEnabled = false, buzzWon = false }: ClueModalProps) {
+export function ClueModal({ clue, onClose, showAnswer = false, buzzerEnabled = false, buzzWon = false, isDailyDouble = false, dailyDoublePlayerName = '', dailyDoubleWager = null }: ClueModalProps) {
   const questionRef = useRef<HTMLDivElement>(null);
   const answerRef = useRef<HTMLDivElement>(null);
-  const [questionFontSize, setQuestionFontSize] = useState(6); // rem
-  const [answerFontSize, setAnswerFontSize] = useState(4.25); // rem
-
   useEffect(() => {
     const adjustFontSize = () => {
       // Adjust question font size
@@ -38,8 +37,6 @@ export function ClueModal({ clue, currentRound, onClose, showAnswer = false, buz
             fontSize -= 0.2;
             questionRef.current.style.fontSize = `${fontSize}rem`;
           }
-
-          setQuestionFontSize(fontSize);
         }
       }
 
@@ -61,8 +58,6 @@ export function ClueModal({ clue, currentRound, onClose, showAnswer = false, buz
             fontSize -= 0.2;
             answerRef.current.style.fontSize = `${fontSize}rem`;
           }
-
-          setAnswerFontSize(fontSize);
         }
       }
     };
@@ -81,10 +76,7 @@ export function ClueModal({ clue, currentRound, onClose, showAnswer = false, buz
 
   if (!clue) return null;
 
-  // Calculate the correct value based on position and round
-  const displayValue = currentRound === 'final'
-    ? clue.value
-    : getClueValue(clue.position, currentRound);
+  const displayValue = clue.value;
 
   return (
     <div className="clue-modal-overlay" onClick={onClose}>
@@ -92,6 +84,14 @@ export function ClueModal({ clue, currentRound, onClose, showAnswer = false, buz
         <div className="clue-value-header">
           {formatCurrency(displayValue)}
         </div>
+
+        {isDailyDouble && (
+          <div className="daily-double-indicator">
+            DAILY DOUBLE!<br />
+            {dailyDoublePlayerName}
+            {dailyDoubleWager !== null && ` wagered ${formatCurrency(dailyDoubleWager)}`}
+          </div>
+        )}
 
         <div className="clue-content">
           <div

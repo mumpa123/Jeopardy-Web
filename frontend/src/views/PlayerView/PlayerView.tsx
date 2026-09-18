@@ -13,11 +13,10 @@ import { cleanClueText } from '../../utils/formatters';
 import './PlayerView.css';
 
 export function PlayerView() {
-  const { gameId, playerName: urlPlayerName, playerNumber: urlPlayerNumber } = useParams<{ gameId: string; playerName: string; playerNumber: string }>();
+  const { gameId, playerName: urlPlayerName } = useParams<{ gameId: string; playerName: string; playerNumber: string }>();
   const navigate = useNavigate();
   const [playerName, setPlayerName] = useState(urlPlayerName || '');
   const [playerNumber, setPlayerNumber] = useState<number | null>(null);
-  const [playerId, setPlayerId] = useState<number | null>(null);
   const [hasJoined, setHasJoined] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -30,12 +29,12 @@ export function PlayerView() {
   const [currentClue, setCurrentClue] = useState<string>('');
   const [status, setStatus] = useState('Enter your name to join...');
   const [buzzCooldown, setBuzzCooldown] = useState(0); // Cooldown in seconds
-  const [cooldownInterval, setCooldownInterval] = useState<NodeJS.Timeout | null>(null);
+  const [cooldownInterval, setCooldownInterval] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   // Daily Double state
   const [isDailyDouble, setIsDailyDouble] = useState(false);
   const [isMyDailyDouble, setIsMyDailyDouble] = useState(false);
-  const [currentRound, setCurrentRound] = useState<'single' | 'double'>('single');
+  const [currentRound, setCurrentRound] = useState<'single' | 'double' | 'final'>('single');
 
   // Final Jeopardy state
   const [isFinalJeopardy, setIsFinalJeopardy] = useState(false);
@@ -131,7 +130,6 @@ export function PlayerView() {
     console.log('[PlayerView] Continuing existing session');
     setPlayerName(existingSession.displayName);
     setPlayerNumber(existingSession.playerNumber);
-    setPlayerId(existingSession.playerId);
     setHasJoined(true);
     setShowSessionConfirmation(false);
     setStatus('Rejoined game - reconnecting...');
@@ -166,7 +164,6 @@ export function PlayerView() {
 
       console.log('[PlayerView] Successfully joined game:', participant);
       setPlayerNumber(participant.player_number);
-      setPlayerId(participant.player);
       setHasJoined(true);
       setStatus('Joined game - waiting for host to start');
 
@@ -266,7 +263,7 @@ export function PlayerView() {
           setShowWagerInput(true); // Show wager input immediately
           setStatus('⭐ Daily Double! Enter your wager:');
         } else {
-          setStatus(`⭐ Daily Double! ${message.player_name || 'Player ' + message.player_number} is wagering...`);
+          setStatus(`⭐ Daily Double! Player ${message.player_number} is wagering...`);
         }
         break;
 
@@ -639,7 +636,6 @@ export function PlayerView() {
 
   // Calculate max wager for Daily Double
   const calculateMaxWager = () => {
-    const minWager = 5;
     const maxClueValue = currentRound === 'single' ? 1000 : 2000;
     return Math.max(maxClueValue, score);
   };

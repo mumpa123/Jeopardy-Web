@@ -27,7 +27,7 @@ export interface Game {
 	      episode_display: string;  // e.g., "S1E5"
 	        host: number;  // player ID
 		  host_name: string;
-		    status: 'waiting' | 'active' | 'completed';
+		    status: 'waiting' | 'active' | 'paused' | 'completed' | 'abandoned';
 		      current_round: 'single' | 'double' | 'final';
 		        settings: Record<string, any>;
 			  created_at: string;

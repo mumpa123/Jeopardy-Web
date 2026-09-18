@@ -50,15 +50,24 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             participants = await self.get_participants()
             player_numbers = [p['player_number'] for p in participants]
 
-            # Select Daily Doubles for this episode
-            daily_doubles = await self.select_daily_doubles(self.game['episode_id'])
+            # Daily Doubles were already selected (weighted by row, excluding
+            # placeholder clues) when the game was created - use that list
+            # rather than recomputing here, which would overwrite it with an
+            # unweighted, unfiltered selection.
+            daily_doubles = await database_sync_to_async(self.engine.get_daily_doubles)()
+
+            # Placeholder clues (question='0') were never reached during the
+            # original broadcast, so there's no real data for them - mark
+            # them as already revealed so no time is spent selecting them.
+            placeholder_clues = await self.get_placeholder_clue_ids(self.game['episode_id'])
 
             await database_sync_to_async(self.engine.initialize_game)(
                 self.game['episode_id'],
                 player_numbers,
-                daily_doubles
+                daily_doubles,
+                placeholder_clues
             )
-            print(f"[connect] Game state initialized with episode_id: {self.game['episode_id']} and {len(daily_doubles)} Daily Doubles")
+            print(f"[connect] Game state initialized with episode_id: {self.game['episode_id']}, {len(daily_doubles)} Daily Doubles, and {len(placeholder_clues)} pre-revealed placeholder clues")
 
         # Join room group
         await self.channel_layer.group_add(
@@ -384,8 +393,10 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         """
         print(f"[handle_reset_game] Processing reset_game request")
 
-        # Reset game state in Redis
-        reset_scores = await database_sync_to_async(self.engine.reset_game)()
+        # Reset game state in Redis, keeping placeholder clues (question='0')
+        # pre-revealed so they don't need to be selected again.
+        placeholder_clues = await self.get_placeholder_clue_ids(self.game['episode_id'])
+        reset_scores = await database_sync_to_async(self.engine.reset_game)(placeholder_clues)
 
         # Reset scores in database as well
         for player_number, score in reset_scores.items():
@@ -405,7 +416,8 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         broadcast_data = {
             'type': 'game_reset',
             'scores': scores_str,
-            'players': players_dict
+            'players': players_dict,
+            'revealed_clues': placeholder_clues
         }
 
         await self.channel_layer.group_send(
@@ -466,11 +478,10 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             'current_round': round_type
         })
 
-        # Clear revealed clues when switching rounds
-        state = await database_sync_to_async(self.engine.get_state)()
-        revealed_clues = []
+        # Reset revealed clues for the new round, but keep placeholder clues
+        # (question='0') pre-revealed so they don't need to be selected.
+        revealed_clues = await self.get_placeholder_clue_ids(self.game['episode_id'])
 
-        # Update revealed clues to empty list
         await database_sync_to_async(self.engine.update_state)({
             'revealed_clues': revealed_clues
         })
@@ -1292,51 +1303,17 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             return None
 
     @database_sync_to_async
-    def select_daily_doubles(self, episode_id):
+    def get_placeholder_clue_ids(self, episode_id):
         """
-        Select Daily Doubles for the episode.
-        - Single Jeopardy: 1 Daily Double
-        - Double Jeopardy: 2 Daily Doubles in different categories
-
-        Returns:
-            List of clue IDs that are Daily Doubles
+        Get IDs of placeholder clues (question='0') for this episode - clues
+        never reached during the original broadcast, so no real data was
+        ever collected for them.
         """
-        from .models import Clue, Category
-        import random
-
-        daily_doubles = []
-
-        # Select 1 DD for Single Jeopardy
-        single_clues = list(Clue.objects.filter(
+        from .models import Clue
+        return list(Clue.objects.filter(
             category__episode_id=episode_id,
-            category__round_type='single'
-        ).select_related('category'))
-
-        if single_clues:
-            single_dd = random.choice(single_clues)
-            daily_doubles.append(single_dd.id)
-            print(f"[select_daily_doubles] Single Jeopardy DD: Clue {single_dd.id} in category {single_dd.category.name}")
-
-        # Select 2 DDs for Double Jeopardy (in different categories)
-        double_categories = list(Category.objects.filter(
-            episode_id=episode_id,
-            round_type='double'
-        ))
-
-        if len(double_categories) >= 2:
-            # Randomly select 2 different categories
-            selected_categories = random.sample(double_categories, 2)
-
-            for cat in selected_categories:
-                # Get clues from this category
-                cat_clues = list(Clue.objects.filter(category=cat))
-                if cat_clues:
-                    dd_clue = random.choice(cat_clues)
-                    daily_doubles.append(dd_clue.id)
-                    print(f"[select_daily_doubles] Double Jeopardy DD: Clue {dd_clue.id} in category {cat.name}")
-
-        print(f"[select_daily_doubles] Selected {len(daily_doubles)} Daily Doubles: {daily_doubles}")
-        return daily_doubles
+            question='0'
+        ).values_list('id', flat=True))
 
     @database_sync_to_async
     def log_action(self, action_type, data):

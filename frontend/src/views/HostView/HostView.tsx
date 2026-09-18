@@ -8,7 +8,7 @@ import { ScoreControls } from '../../components/Host/ScoreControls';
 import { ClueDetail } from '../../components/Host/ClueDetail';
 import { GameControls } from '../../components/Host/GameControls';
 import { DailyDoubleControls } from '../../components/Host/DailyDoubleControls';
-import { FinalJeopardyControls, type FJStage } from '../../components/Host/FinalJeopardyControls';
+import { FinalJeopardyControls, type FJStage, type FinalJeopardyClue } from '../../components/Host/FinalJeopardyControls';
 import { SessionConfirmation } from '../../components/SessionConfirmation/SessionConfirmation';
 import type { Category, Clue } from '../../types/Episode';
 import { GameWebSocket } from '../../services/websocket';
@@ -104,7 +104,7 @@ export function HostView() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const [currentRound, setCurrentRound] = useState<'single' | 'double' | 'final'>('single');
-  const [gameStatus, setGameStatus] = useState<'waiting' | 'active' | 'completed'>('active');
+  const [gameStatus, setGameStatus] = useState<'waiting' | 'active' | 'completed' | 'abandoned'>('active');
   const [revealedClues, setRevealedClues] = useState<number[]>([]);
   const [selectedClue, setSelectedClue] = useState<Clue | null>(null);
   const [showAnswer, setShowAnswer] = useState(false);
@@ -143,7 +143,7 @@ export function HostView() {
   // Final Jeopardy state
   const [fjStage, setFjStage] = useState<FJStage>('not_started');
   const [fjCategory, setFjCategory] = useState<string | null>(null);
-  const [fjClue, setFjClue] = useState<Clue | null>(null); // Store the FJ clue (question and correct answer)
+  const [fjClue, setFjClue] = useState<FinalJeopardyClue | null>(null); // Store the FJ clue (question and correct answer)
   const [fjPlayerAnswers, setFjPlayerAnswers] = useState<Array<{
     playerNumber: number;
     playerName: string;
@@ -380,6 +380,13 @@ export function HostView() {
         if (message.current_player !== undefined) {
           setCurrentPlayer(message.current_player);
         }
+
+        // Restore revealed clues (includes placeholder clues pre-revealed
+        // at game init) - without this, they only show as revealed after
+        // the next state update instead of immediately on load.
+        if (message.state?.revealed_clues) {
+          setRevealedClues(message.state.revealed_clues);
+        }
         break;
 
       case 'player_joined':
@@ -465,7 +472,7 @@ export function HostView() {
             score: message.scores[numStr] || 0
           };
         }));
-        setRevealedClues([]);
+        setRevealedClues(message.revealed_clues);
         setSelectedClue(null);
         setShowAnswer(false);
         setBuzzQueue([]);
@@ -1033,10 +1040,10 @@ export function HostView() {
   };
 
   const handleEndGame = () => {
-    if (!gameId || !ws.current) return;
+    if (!gameId || !wsRef.current) return;
 
     if (confirm('Are you sure you want to end the game? This will mark it as completed.')) {
-      ws.current.send({
+      wsRef.current.send({
         type: 'end_game'
       });
       console.log('[HostView] End game request sent');
@@ -1044,10 +1051,10 @@ export function HostView() {
   };
 
   const handleAbandonGame = () => {
-    if (!gameId || !ws.current) return;
+    if (!gameId || !wsRef.current) return;
 
     if (confirm('Are you sure you want to abandon the game? This cannot be undone.')) {
-      ws.current.send({
+      wsRef.current.send({
         type: 'abandon_game'
       });
       console.log('[HostView] Abandon game request sent');
@@ -1182,7 +1189,7 @@ export function HostView() {
         <div className="host-left">
           <ScoreDisplay scores={scores} playerNames={playerNames} currentPlayer={currentPlayer} />
           <div className="board-container">
-            {currentCategories.length > 0 ? (
+            {currentRound !== 'final' && currentCategories.length > 0 ? (
               <>
                 {console.log('[HostView] Rendering Board with:', { activeClueId: selectedClue?.id, buzzerEnabled, buzzWonClueId })}
                 <Board

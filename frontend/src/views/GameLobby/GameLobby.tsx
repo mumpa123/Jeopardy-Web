@@ -4,7 +4,8 @@ import { Header } from '../../components/Header/Header';
 import { SeasonSelector } from '../../components/EpisodeBrowser/SeasonSelector';
 import { EpisodeSelector } from '../../components/EpisodeBrowser/EpisodeSelector';
 import { api } from '../../services/api';
-import type { Game, Episode } from '../../types/Game';
+import type { Game } from '../../types/Game';
+import type { Episode } from '../../types/Episode';
 import './GameLobby.css';
 
 export function GameLobby() {
@@ -17,6 +18,13 @@ export function GameLobby() {
   const [showSeasonSelector, setShowSeasonSelector] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
 
+  const createHostPlayer = async () => {
+    const name = prompt('Enter your name as host:')?.trim() || 'Host';
+    const hostPlayer = await api.players.createGuest(name);
+    setHostName(hostPlayer.display_name);
+    return hostPlayer;
+  };
+
   const handleCreateRandomGame = async () => {
     setLoading(true);
     setError(null);
@@ -26,9 +34,12 @@ export function GameLobby() {
       const episode = await api.episodes.random();
       setSelectedEpisode(episode);
 
+      const hostPlayer = await createHostPlayer();
+
       // Create the game
       const game = await api.games.create({
         episode: episode.id,
+        host: hostPlayer.id,
         settings: {
           buzzer_window_ms: 5000,
           daily_double_wager_time_ms: 30000,
@@ -67,9 +78,12 @@ export function GameLobby() {
       const episode = await api.episodes.get(episodeId);
       setSelectedEpisode(episode);
 
+      const hostPlayer = await createHostPlayer();
+
       // Create the game with selected episode
       const game = await api.games.create({
         episode: episodeId,
+        host: hostPlayer.id,
         settings: {
           buzzer_window_ms: 5000,
           daily_double_wager_time_ms: 30000,
@@ -181,6 +195,13 @@ export function GameLobby() {
                 <strong>Status:</strong>
                 <span className="status-badge">{createdGame.status}</span>
               </div>
+
+              {hostName && (
+                <div className="info-row">
+                  <strong>Host:</strong>
+                  <span>{hostName}</span>
+                </div>
+              )}
             </div>
 
             <div className="join-section">

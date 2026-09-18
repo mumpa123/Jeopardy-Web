@@ -17,7 +17,7 @@ export function DailyDoubleControls({
   stage,
   playerName,
   wager,
-  submittedAnswer,
+  submittedAnswer: _submittedAnswer,
   onRevealDailyDouble,
   onShowClue,
   onJudgeCorrect,

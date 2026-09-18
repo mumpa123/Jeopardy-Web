@@ -100,7 +100,7 @@ ASGI_APPLICATION = 'backend.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'jeopardy_v2',
+        'NAME': config('DB_NAME', default='jeopardy_v2'),
         'USER': 'jeopardy_user',
         'PASSWORD': config('DB_PASSWORD'), 
         'HOST': 'localhost',

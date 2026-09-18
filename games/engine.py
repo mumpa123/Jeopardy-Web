@@ -43,9 +43,9 @@ class GameStateManager:
         self.attempted_players_key = f"game:{self.game_id}:attempted_players"
 
         # Buzz cooldown duration in seconds
-        self.BUZZ_COOLDOWN_SECONDS = 2
+        self.BUZZ_COOLDOWN_SECONDS = 0.25
 
-    def initialize_game(self, episode_id: int, player_numbers: List[int], daily_doubles: List[int] = None) -> Dict:
+    def initialize_game(self, episode_id: int, player_numbers: List[int], daily_doubles: List[int] = None, initial_revealed_clues: List[int] = None) -> Dict:
         """
         Initialize game state in Redis when game starts.
 
@@ -53,6 +53,10 @@ class GameStateManager:
             episode_id: ID of the episode being played
             player_numbers: List of player numbers [1, 2, 3]
             daily_doubles: List of clue IDs that are Daily Doubles
+            initial_revealed_clues: List of clue IDs to mark as already
+                revealed from the start (e.g. placeholder clues with no
+                real question/answer data, never reached during the
+                original broadcast)
 
         Returns
             Initial game state dict
@@ -62,7 +66,7 @@ class GameStateManager:
                 'status': 'active',
                 'current_round': 'single',
                 'current_clue': '',  # Empty string instead of None
-                'revealed_clues': json.dumps([]),  # JSON serialize lists
+                'revealed_clues': json.dumps(initial_revealed_clues or []),  # JSON serialize lists
                 'daily_doubles': json.dumps(daily_doubles or []), # JSON serialize lists
         }
 
@@ -167,11 +171,15 @@ class GameStateManager:
         self.redis.delete(f"{self.buzzer_key}:order")
         self.redis.delete(self.attempted_players_key)
 
-    def reset_game(self) -> Dict:
+    def reset_game(self, initial_revealed_clues: List[int] = None) -> Dict:
         """
         Reset the entire game state.
         Clears all scores, revealed clues, and resets round to single.
         Used when host clicks "Reset Game".
+
+        Args:
+            initial_revealed_clues: List of clue IDs to mark as already
+                revealed after the reset (e.g. placeholder clues)
 
         Returns:
             Dict with reset scores
@@ -180,7 +188,7 @@ class GameStateManager:
         reset_state = {
             'current_round': 'single',
             'current_clue': '',
-            'revealed_clues': json.dumps([]),
+            'revealed_clues': json.dumps(initial_revealed_clues or []),
         }
         self.redis.hset(self.state_key, mapping=reset_state)
 
