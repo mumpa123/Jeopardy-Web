@@ -24,7 +24,7 @@
   position: relative;
   overflow: hidden;
   font-family: 'Arial Black', sans-serif;
-  color: #FFD700;
+  color: #E8A445;
   text-shadow: 2px 4px 4px black;
   box-sizing: border-box;
 }
@@ -90,13 +90,13 @@
   justify-content: center;
   height: 100%;
   font-weight: bold;
-  color: #FFD700 !important;
-  text-shadow: 6px 6px 0 black;
+  color: #E8A445 !important;
+  text-shadow: 8px 8px 0 black;
   font-family: 'Swiss911', 'Arial Black', sans-serif;
 }
 
 .clue-card .clue-value {
-  color: #FFD700 !important;
+  color: #E8A445 !important;
 }
 
 /* Responsive font size */
