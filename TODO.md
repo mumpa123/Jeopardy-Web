@@ -19,3 +19,13 @@ practice before deciding what (if anything) to build here.
 `Game.STATUS_CHOICES` includes `'paused'` on the backend, but nothing in the
 frontend sets or displays it. Not urgent — no code path currently pauses a
 game. Decide later whether a pause feature is wanted.
+
+## Host can't start Final Jeopardy if not everyone wagered - DONE (2026-09-18)
+
+Added a manual "Reveal Clue Anyway" override button to `FinalJeopardyControls`
+(shown alongside the wager-status list during the `category_shown` stage),
+wired to the same `handleRevealFJClue` handler as the automatic path. Lets the
+host proceed even if a player left, disconnected, or never wagers. No backend
+change needed - `handle_reveal_fj_clue` already had no wager-completeness
+gate; confirmed via a WebSocket-level test that `reveal_fj_clue` succeeds
+with zero wagers submitted.

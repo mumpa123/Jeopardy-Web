@@ -300,6 +300,33 @@
   }
 }
 
+/* Final Jeopardy waiting placeholder - shown in the main board area between
+   the host starting the final round and Final Jeopardy actually starting */
+.fj-board-waiting {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: #000080;
+  color: white;
+  text-align: center;
+}
+
+.fj-board-waiting h2 {
+  font-size: 2.5rem;
+  margin: 0;
+  text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.7);
+}
+
+.fj-board-waiting p {
+  font-size: 1.5rem;
+  margin: 0;
+  font-style: italic;
+  opacity: 0.85;
+}
+
 /* Final Jeopardy Overlays */
 .fj-overlay {
   position: fixed;

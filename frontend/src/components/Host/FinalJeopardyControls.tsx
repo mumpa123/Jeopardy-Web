@@ -34,6 +34,7 @@ interface FinalJeopardyControlsProps {
   onStartTimer: () => void;  // Start timer after revealing clue
   onJudgeAnswer: (playerNumber: number, correct: boolean) => void;
   onShowAnswers?: () => void;  // Manual trigger to show answers for judging
+  onForceReveal?: () => void;  // Manual override to reveal the clue before all wagers are in
 }
 
 export function FinalJeopardyControls({
@@ -46,7 +47,8 @@ export function FinalJeopardyControls({
   onRevealClue,
   onStartTimer,
   onJudgeAnswer,
-  onShowAnswers
+  onShowAnswers,
+  onForceReveal
 }: FinalJeopardyControlsProps) {
   return (
     <div className="final-jeopardy-controls">
@@ -91,6 +93,18 @@ export function FinalJeopardyControls({
               </div>
             ))}
           </div>
+
+          {onForceReveal && (
+            <>
+              <button
+                className="fj-force-reveal-button"
+                onClick={onForceReveal}
+              >
+                Reveal Clue Anyway
+              </button>
+              <p className="fj-hint">Use if a player left, disconnected, or won't wager</p>
+            </>
+          )}
         </div>
       )}
 

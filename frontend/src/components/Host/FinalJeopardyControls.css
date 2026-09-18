@@ -62,6 +62,26 @@
   box-shadow: 0 6px 12px rgba(255, 215, 0, 0.5);
 }
 
+.fj-force-reveal-button {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  margin: 1rem auto 0;
+  padding: 0.6rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: bold;
+  background: transparent;
+  color: #ff9800;
+  border: 2px solid #ff9800;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fj-force-reveal-button:hover {
+  background: rgba(255, 152, 0, 0.15);
+}
+
 .fj-category-display {
   background: rgba(255, 215, 0, 0.1);
   border: 2px solid #ffd700;
