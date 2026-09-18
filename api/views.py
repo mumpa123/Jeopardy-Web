@@ -270,22 +270,27 @@ class GameViewSet(viewsets.ModelViewSet):
         # 1 DD for single jeopardy, 2 DDs for double jeopardy
         episode = game.episode
 
-        # Get all clues for single jeopardy round (excluding value=0 clues,
-        # which are missing data from the original archive - never place a
-        # Daily Double on one of these)
+        # Get all clues for single jeopardy round, excluding:
+        # - value=0 clues (a real anomaly in the archive: normal question/
+        #   answer text but no recorded dollar value)
+        # - clues where question='0' (a placeholder for missing clue text -
+        #   both question and answer are '0' in these; note answer='0' alone
+        #   can be a legitimate real answer, e.g. "0 degrees Celsius", so we
+        #   only exclude on question='0')
+        # Never place a Daily Double on either of these.
         single_jeopardy_clues = list(
             Clue.objects.filter(
                 category__episode=episode,
                 category__round_type='single'
-            ).exclude(value=0).values_list('id', flat=True)
+            ).exclude(value=0).exclude(question='0').values_list('id', flat=True)
         )
 
-        # Get all clues for double jeopardy round (same exclusion as above)
+        # Get all clues for double jeopardy round (same exclusions as above)
         double_jeopardy_clues = list(
             Clue.objects.filter(
                 category__episode=episode,
                 category__round_type='double'
-            ).exclude(value=0).values_list('id', flat=True)
+            ).exclude(value=0).exclude(question='0').values_list('id', flat=True)
         )
 
         # Randomly select DDs
