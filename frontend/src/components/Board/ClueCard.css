@@ -5,6 +5,13 @@
   font-style: normal;
 }
 
+@font-face {
+  font-family: 'Swiss921';
+  src: url('/fonts/swiss921.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 .clue-card {
   aspect-ratio: 1.5 / 1;
   background-color: rgb(1, 27, 172);
@@ -85,7 +92,7 @@
   font-weight: bold;
   color: #FFD700 !important;
   text-shadow: 2px 4px 4px black;
-  font-family: 'gyparody', 'Arial Black', sans-serif;
+  font-family: 'Swiss921', 'Arial Black', sans-serif;
 }
 
 .clue-card .clue-value {

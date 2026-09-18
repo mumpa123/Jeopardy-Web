@@ -13,7 +13,7 @@
   margin-bottom: 0;
 }
 
-.category-header {  background-color: rgb(1, 27, 172);  background-image: url('/blank_blue_jeopardy.png');  background-size: cover;  background-position: center;  color: white;  padding: 1rem 0.5rem;  text-align: center;  font-weight: bold;  font-size: 2.75rem;  font-family: 'Impact', sans-serif;  text-transform: uppercase;  border: 5px solid black;  border-bottom: 8px solid black;  height: 120px;  display: flex;  align-items: center;  justify-content: center;  overflow-wrap: break-word;  word-wrap: break-word;  hyphens: auto;  box-sizing: border-box;}
+.category-header {  background-color: rgb(1, 27, 172);  background-image: url('/blank_blue_jeopardy.png');  background-size: cover;  background-position: center;  color: white;  padding: 1rem 0.5rem;  text-align: center;  font-weight: bold;  font-size: 2.75rem;  font-family: 'Swiss921', 'Impact', sans-serif;  text-transform: uppercase;  border: 5px solid black;  border-bottom: 8px solid black;  height: 120px;  display: flex;  align-items: center;  justify-content: center;  overflow-wrap: break-word;  word-wrap: break-word;  hyphens: auto;  box-sizing: border-box;}
 
 .clue-row {
   display: grid;
