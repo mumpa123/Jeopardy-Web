@@ -32,7 +32,7 @@ echo "== Building frontend =="
 (cd frontend && npm install --silent && npx vite build)
 
 echo "== Collecting static files =="
-./venv/bin/python manage.py collectstatic --noinput
+./venv/bin/python manage.py collectstatic --noinput --clear
 
 echo "== Restarting prod service =="
 sudo systemctl restart jeopardy.service
