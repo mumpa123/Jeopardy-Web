@@ -56,12 +56,18 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             # unweighted, unfiltered selection.
             daily_doubles = await database_sync_to_async(self.engine.get_daily_doubles)()
 
+            # Placeholder clues (question='0') were never reached during the
+            # original broadcast, so there's no real data for them - mark
+            # them as already revealed so no time is spent selecting them.
+            placeholder_clues = await self.get_placeholder_clue_ids(self.game['episode_id'])
+
             await database_sync_to_async(self.engine.initialize_game)(
                 self.game['episode_id'],
                 player_numbers,
-                daily_doubles
+                daily_doubles,
+                placeholder_clues
             )
-            print(f"[connect] Game state initialized with episode_id: {self.game['episode_id']} and {len(daily_doubles)} Daily Doubles")
+            print(f"[connect] Game state initialized with episode_id: {self.game['episode_id']}, {len(daily_doubles)} Daily Doubles, and {len(placeholder_clues)} pre-revealed placeholder clues")
 
         # Join room group
         await self.channel_layer.group_add(
@@ -1293,6 +1299,19 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             }
         except Clue.DoesNotExist:
             return None
+
+    @database_sync_to_async
+    def get_placeholder_clue_ids(self, episode_id):
+        """
+        Get IDs of placeholder clues (question='0') for this episode - clues
+        never reached during the original broadcast, so no real data was
+        ever collected for them.
+        """
+        from .models import Clue
+        return list(Clue.objects.filter(
+            category__episode_id=episode_id,
+            question='0'
+        ).values_list('id', flat=True))
 
     @database_sync_to_async
     def log_action(self, action_type, data):
