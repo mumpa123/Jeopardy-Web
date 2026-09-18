@@ -608,6 +608,11 @@ export function BoardView() {
               disabled={false}
             />
           </>
+        ) : currentRound === 'final' ? (
+          <div className="fj-board-waiting">
+            <h2>🏆 FINAL JEOPARDY 🏆</h2>
+            <p>Get ready...</p>
+          </div>
         ) : categories.length > 0 ? (
           <div style={{ color: 'white', textAlign: 'center', padding: '2rem' }}>
             No categories for {currentRound} jeopardy

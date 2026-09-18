@@ -21,6 +21,8 @@ export function PlayerView() {
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [score, setScore] = useState(0);
+  const [allScores, setAllScores] = useState<Record<string, number>>({});
+  const [allPlayerNames, setAllPlayerNames] = useState<Record<string, string>>({});
   const [canBuzz, setCanBuzz] = useState(false);
   const [buzzed, setBuzzed] = useState(false);
   const [unlockToken, setUnlockToken] = useState<number | null>(null); // Token for validating buzzes
@@ -231,6 +233,12 @@ export function PlayerView() {
         if (message.scores && playerNumber) {
           setScore(message.scores[String(playerNumber)] || 0);
         }
+        if (message.scores) {
+          setAllScores(message.scores);
+        }
+        if (message.players) {
+          setAllPlayerNames(message.players);
+        }
         // Extract current round from state if available
         if (message.state && message.state.current_round) {
           setCurrentRound(message.state.current_round);
@@ -301,6 +309,7 @@ export function PlayerView() {
           setScore(message.new_score);
           setStatus(message.correct ? `Correct! +$${message.wager}` : `Incorrect. -$${message.wager}`);
         }
+        setAllScores(prev => ({ ...prev, [String(message.player_number)]: message.new_score }));
         // Clear DD state
         setIsDailyDouble(false);
         setIsMyDailyDouble(false);
@@ -361,6 +370,7 @@ export function PlayerView() {
           setBuzzed(false);
           setCanBuzz(false);
         }
+        setAllScores(prev => ({ ...prev, [String(message.player_number)]: message.new_score }));
         break;
 
       case 'return_to_board':
@@ -382,6 +392,9 @@ export function PlayerView() {
         if (message.scores && playerNumber) {
           setScore(message.scores[String(playerNumber)] || 0);
         }
+        if (message.scores) {
+          setAllScores(message.scores);
+        }
         break;
 
       case 'game_reset':
@@ -396,6 +409,12 @@ export function PlayerView() {
         setIsDailyDouble(false);
         setIsMyDailyDouble(false);
         setStatus('Game has been reset');
+        if (message.scores) {
+          setAllScores(message.scores);
+        }
+        if (message.players) {
+          setAllPlayerNames(message.players);
+        }
         break;
 
       case 'score_adjusted':
@@ -405,6 +424,7 @@ export function PlayerView() {
           setScore(message.new_score);
           console.log(`[PlayerView] Score updated to ${message.new_score}`);
         }
+        setAllScores(prev => ({ ...prev, [String(message.player_number)]: message.new_score }));
         break;
 
       case 'round_changed':
@@ -485,6 +505,7 @@ export function PlayerView() {
           setScore(message.new_score);
           setStatus(message.correct ? `Correct! +$${message.wager}` : `Incorrect. -$${message.wager}`);
         }
+        setAllScores(prev => ({ ...prev, [String(message.player_number)]: message.new_score }));
         break;
 
       case 'game_completed':
@@ -797,6 +818,29 @@ export function PlayerView() {
               <div className="fj-category-display">
                 <p className="fj-label">Category:</p>
                 <h3 className="fj-category">{fjCategory}</h3>
+              </div>
+            )}
+
+            {/* Scores - shown while wagering so players can bet with full info */}
+            {!fjWagerSubmitted && Object.keys(allScores).length > 0 && (
+              <div className="fj-scores-display">
+                <p className="fj-label">Scores:</p>
+                <div className="fj-scores-list">
+                  {Object.entries(allScores)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([num, playerScore]) => (
+                      <div
+                        key={num}
+                        className={`fj-score-row ${Number(num) === playerNumber ? 'is-you' : ''}`}
+                      >
+                        <span className="fj-score-name">
+                          {allPlayerNames[num] || `Player ${num}`}
+                          {Number(num) === playerNumber ? ' (you)' : ''}
+                        </span>
+                        <span className="fj-score-value">${playerScore.toLocaleString()}</span>
+                      </div>
+                    ))}
+                </div>
               </div>
             )}
 
