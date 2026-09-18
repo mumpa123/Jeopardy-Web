@@ -91,7 +91,6 @@ export function Board({
                 key={clue.id}
                 value={value}
                 isRevealed={isRevealed}
-                isDailyDouble={clue.is_daily_double}
                 isActive={isActive}
                 buzzWon={buzzWon}
                 onClick={() => onClueClick(clue)}
