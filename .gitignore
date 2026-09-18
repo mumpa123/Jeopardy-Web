@@ -57,3 +57,4 @@ dump.rdb
 
 # Server runtime files
 .pids/
+backups/
