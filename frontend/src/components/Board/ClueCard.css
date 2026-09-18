@@ -6,8 +6,8 @@
 }
 
 @font-face {
-  font-family: 'Swiss921';
-  src: url('/fonts/swiss921.ttf') format('truetype');
+  font-family: 'Swiss911';
+  src: url('/fonts/swiss911.otf') format('opentype');
   font-weight: normal;
   font-style: normal;
 }
@@ -92,7 +92,7 @@
   font-weight: bold;
   color: #FFD700 !important;
   text-shadow: 2px 4px 4px black;
-  font-family: 'Swiss921', 'Arial Black', sans-serif;
+  font-family: 'Swiss911', 'Arial Black', sans-serif;
 }
 
 .clue-card .clue-value {
