@@ -21,3 +21,10 @@ python-decouple==3.8
 
 # ASGI server (included with daphne, but listed for clarity)
 asgiref==3.7.2
+
+# Static file serving
+whitenoise==6.11.0
+
+# HTTP clients (used directly by games/consumers.py and api/views.py)
+aiohttp==3.13.3
+requests==2.32.5
