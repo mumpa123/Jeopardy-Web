@@ -270,40 +270,45 @@ class GameViewSet(viewsets.ModelViewSet):
         # 1 DD for single jeopardy, 2 DDs for double jeopardy
         episode = game.episode
 
-        # Get all clues for single jeopardy round, excluding clues where
-        # question='0' - a placeholder for clues that were never reached
-        # during the actual broadcast, so no real data was ever collected
-        # (both question and answer are '0' in these; note answer='0' alone
-        # can be a legitimate real answer, e.g. "0 degrees Celsius", so we
-        # only exclude on question='0'). Never place a Daily Double on one
-        # of these.
-        single_jeopardy_clues = list(
-            Clue.objects.filter(
+        # Row weights (% chance a Daily Double lands on this row), matching
+        # real-show statistics. Index 0 = top row ($200/$400), index 4 =
+        # bottom row ($1000/$2000). Same weights used for both rounds.
+        DD_ROW_WEIGHTS = [0, 7.5600000000000005, 24.92, 36.36000000000001, 31.119999999999997]
+
+        def select_daily_doubles(round_type, count):
+            """
+            Select `count` distinct Daily Double clues for the given round,
+            weighted by row per DD_ROW_WEIGHTS: a row is picked first
+            according to the weights, then a clue is picked uniformly at
+            random from the available clues in that row. Excludes clues
+            where question='0' - a placeholder for clues that were never
+            reached during the actual broadcast, so no real data was ever
+            collected (both question and answer are '0' in these; note
+            answer='0' alone can be a legitimate real answer, e.g. "0
+            degrees Celsius", so we only exclude on question='0').
+            """
+            clues_by_row = {position: [] for position in range(5)}
+            for clue_id, position in Clue.objects.filter(
                 category__episode=episode,
-                category__round_type='single'
-            ).exclude(question='0').values_list('id', flat=True)
-        )
+                category__round_type=round_type
+            ).exclude(question='0').values_list('id', 'position'):
+                clues_by_row[position].append(clue_id)
 
-        # Get all clues for double jeopardy round (same exclusion as above)
-        double_jeopardy_clues = list(
-            Clue.objects.filter(
-                category__episode=episode,
-                category__round_type='double'
-            ).exclude(question='0').values_list('id', flat=True)
-        )
+            selected = []
+            for _ in range(count):
+                rows_with_clues = [p for p in range(5) if clues_by_row[p]]
+                if not rows_with_clues:
+                    break
+                weights = [DD_ROW_WEIGHTS[p] for p in rows_with_clues]
+                chosen_row = random.choices(rows_with_clues, weights=weights, k=1)[0]
+                clue_id = random.choice(clues_by_row[chosen_row])
+                clues_by_row[chosen_row].remove(clue_id)
+                selected.append(clue_id)
+            return selected
 
-        # Randomly select DDs
-        daily_double_ids = []
-        if single_jeopardy_clues:
-            # Select 1 random DD from single jeopardy
-            daily_double_ids.append(random.choice(single_jeopardy_clues))
-
-        if double_jeopardy_clues and len(double_jeopardy_clues) >= 2:
-            # Select 2 random DDs from double jeopardy
-            daily_double_ids.extend(random.sample(double_jeopardy_clues, 2))
-        elif double_jeopardy_clues:
-            # If less than 2 clues, select what we can
-            daily_double_ids.extend(random.sample(double_jeopardy_clues, len(double_jeopardy_clues)))
+        # Randomly select DDs: 1 for single jeopardy, 2 for double jeopardy
+        daily_double_ids = select_daily_doubles('single', 1)
+        daily_double_ids += select_daily_doubles('double', 2)
 
         # Initialize game engine and set Daily Doubles
         engine = GameStateManager(str(game.game_id))
